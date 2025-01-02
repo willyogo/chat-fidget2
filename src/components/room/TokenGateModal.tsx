@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { isAddress } from 'viem';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/auth/supabase';
+import { useAuth } from '../auth/useAuth';
 
 type TokenGateModalProps = {
   roomName: string;
@@ -16,6 +17,7 @@ export function TokenGateModal({
   currentRequiredTokens,
   onClose
 }: TokenGateModalProps) {
+  const { address } = useAuth();
   const [tokenAddress, setTokenAddress] = useState(currentTokenAddress || '');
   const [requiredTokens, setRequiredTokens] = useState(currentRequiredTokens);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,46 +25,57 @@ export function TokenGateModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!address) {
+      setError('Must be authenticated to update room');
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
 
     try {
+      // Validate token address if provided
       if (tokenAddress && !isAddress(tokenAddress)) {
-        throw new Error('Invalid token address');
+        throw new Error('Invalid token address format');
       }
 
-      const { error: updateError } = await supabase
+      const normalizedAddress = address.toLowerCase();
+
+      // Get current auth status
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      console.log('Auth status:', {
+        authenticated: !!session,
+        jwt_claims: session?.user?.user_metadata
+      });
+
+      // Attempt update
+      const { data, error: updateError } = await supabase
         .from('rooms')
         .update({
           token_address: tokenAddress || null,
           required_tokens: tokenAddress ? requiredTokens : 0,
         })
-        .eq('name', roomName);
+        .eq('name', roomName)
+        .eq('owner_address', normalizedAddress)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('Update response:', {
+        success: true,
+        affected_rows: data?.length || 0,
+        updated_data: data
+      });
+
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update token gate');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleRemoveGate() {
-    setIsSubmitting(true);
-    try {
-      const { error: updateError } = await supabase
-        .from('rooms')
-        .update({
-          token_address: null,
-          required_tokens: 0,
-        })
-        .eq('name', roomName);
-
-      if (updateError) throw updateError;
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove token gate');
+      const error = err as Error;
+      console.error('Update failed:', error);
+      setError(error.message || 'Failed to update token gate');
     } finally {
       setIsSubmitting(false);
     }
@@ -115,16 +128,6 @@ export function TokenGateModal({
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            {currentTokenAddress && (
-              <button
-                type="button"
-                onClick={handleRemoveGate}
-                disabled={isSubmitting}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              >
-                Remove Gate
-              </button>
-            )}
             <button
               type="button"
               onClick={onClose}
