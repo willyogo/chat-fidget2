@@ -15,8 +15,8 @@ type RoomHeaderProps = {
 
 export function RoomHeader({ room, onOpenSettings, onManageTokenGate }: RoomHeaderProps) {
   const { address } = useAuth();
-  const isOwner = address && room.owner_address && 
-    address.toLowerCase() === room.owner_address.toLowerCase();
+  const isOwner = !!address && room.owner_address &&
+    address.toLowerCase() === room.owner_address.toLowerCase());
 
   return (
     <div className="flex items-center justify-between p-4 border-b">
