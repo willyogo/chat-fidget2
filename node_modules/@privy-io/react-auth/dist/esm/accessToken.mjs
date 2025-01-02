@@ -1,0 +1,1 @@
+import{Token as e}from"./token.mjs";import"jose";class t extends e{static parse(e){try{return new t(e)}catch(e){return null}}get appId(){return this._decoded.aid?this._decoded.aid:this.audience}}export{t as AccessToken};

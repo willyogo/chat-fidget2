@@ -1,0 +1,1 @@
+import{jsx as r}from"react/jsx-runtime";import{ArrowLeft as o}from"../../icons/ArrowLeft.mjs";import{useMenu as t}from"./MenuProvider.mjs";import"react";function e(){let{history:e,goBack:i}=t();return 0===e.length?null:/*#__PURE__*/r("button",{onClick:()=>i(),children:/*#__PURE__*/r(o,{})})}export{e as BackButton};

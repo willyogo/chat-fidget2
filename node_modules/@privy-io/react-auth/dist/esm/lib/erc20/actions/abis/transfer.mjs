@@ -1,0 +1,1 @@
+const t=[{constant:!1,inputs:[{name:"_to",type:"address"},{name:"_value",type:"uint256"}],name:"transfer",outputs:[{name:"",type:"bool"}],payable:!1,stateMutability:"nonpayable",type:"function"}];export{t as ERC20_TRANSFER_ABI_STUB};

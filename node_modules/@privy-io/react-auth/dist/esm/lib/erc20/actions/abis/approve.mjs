@@ -1,0 +1,1 @@
+const e=[{constant:!1,inputs:[{name:"spender",type:"address"},{name:"value",type:"uint256"}],name:"approve",outputs:[{name:"",type:"bool"}],payable:!1,stateMutability:"nonpayable",type:"function"}];export{e as ERC20_APPROVE_ABI_STUB};

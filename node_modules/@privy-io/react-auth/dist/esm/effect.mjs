@@ -1,0 +1,1 @@
+class s{execute(s){return null===this.promise&&(this.promise=(async()=>{try{return await this.fn(s)}finally{this.promise=null}})()),this.promise}constructor(s){this.promise=null,this.fn=s}}export{s as RunEffectOnce};
