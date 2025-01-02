@@ -1,6 +1,6 @@
-import { PrivyProvider } from './components/auth/PrivyProvider';
-import { RoomProvider } from './components/room/RoomProvider';
-import { ChatRoom } from './components/chat/ChatRoom';
+import { PrivyProvider } from './components/auth';
+import { RoomProvider } from './components/room';
+import { ChatRoom } from './components/chat';
 
 export default function App() {
   return (

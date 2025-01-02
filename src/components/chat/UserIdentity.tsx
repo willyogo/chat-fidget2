@@ -3,9 +3,10 @@ import { useFarcasterIdentity } from '../../lib/hooks/useFarcasterIdentity';
 type UserIdentityProps = {
   address: string;
   className?: string;
+  hideAvatar?: boolean;
 };
 
-export function UserIdentity({ address, className = '' }: UserIdentityProps) {
+export function UserIdentity({ address, className = '', hideAvatar = false }: UserIdentityProps) {
   const { identity, isLoading } = useFarcasterIdentity(address);
   const truncatedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
@@ -16,7 +17,7 @@ export function UserIdentity({ address, className = '' }: UserIdentityProps) {
   if (identity.username) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        {identity.avatar && (
+        {!hideAvatar && identity.avatar && (
           <img 
             src={identity.avatar} 
             alt={identity.username}
