@@ -18,12 +18,7 @@ export function MessageInput() {
   );
   const addMessage = useMessagesStore((state) => state.addMessage);
 
-  async function handleSubmit(e?: React.FormEvent) {
-    // Prevent default form submission if event exists
-    if (e) {
-      e.preventDefault();
-    }
-
+  async function handleSubmit() {
     if (!message.trim() || !room?.name || isSubmitting) return;
 
     if (!isAuthenticated) {
@@ -45,7 +40,6 @@ export function MessageInput() {
     }
   }
 
-  // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -77,7 +71,7 @@ export function MessageInput() {
         disabled={isSubmitting || !isAuthenticated}
       />
       <button
-        onClick={() => handleSubmit()}
+        onClick={handleSubmit}
         disabled={!message.trim() || isSubmitting}
         className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >

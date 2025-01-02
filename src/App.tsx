@@ -2,16 +2,14 @@ import { PrivyProvider } from './components/auth/PrivyProvider';
 import { RoomProvider } from './components/room/RoomProvider';
 import { ChatRoom } from './components/chat/ChatRoom';
 
-function App() {
+export default function App() {
   return (
     <PrivyProvider>
       <RoomProvider>
-        <div className="min-h-screen bg-gray-50">
+        <div className="h-screen max-h-screen overflow-hidden bg-gray-50">
           <ChatRoom />
         </div>
       </RoomProvider>
     </PrivyProvider>
   );
 }
-
-export default App;

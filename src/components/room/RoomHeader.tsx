@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { WalletDropdown } from '../auth/WalletDropdown';
-import { Settings } from 'lucide-react';
 import { TokenGateInfo } from './TokenGateInfo';
 import { RoomName } from './RoomName';
 import { TokenGateModal } from './TokenGateModal';
@@ -20,9 +19,9 @@ export function RoomHeader({ room }: RoomHeaderProps) {
     address.toLowerCase() === room.owner_address.toLowerCase();
 
   return (
-    <div className="flex items-center justify-between p-4 border-b">
-      <div>
-        <h1 className="text-xl font-bold">
+    <div className="flex items-center justify-between p-3 md:p-4 border-b bg-white shadow-sm">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-lg md:text-xl font-bold truncate">
           <RoomName name={room.name} />
         </h1>
         <TokenGateInfo
@@ -32,7 +31,7 @@ export function RoomHeader({ room }: RoomHeaderProps) {
           onManageGate={() => setShowTokenGateModal(true)}
         />
       </div>
-      <div className="flex items-center gap-4">
+      <div className="ml-4 flex-shrink-0">
         <WalletDropdown />
       </div>
 
