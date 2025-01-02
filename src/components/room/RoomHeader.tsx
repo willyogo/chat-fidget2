@@ -1,6 +1,8 @@
 import { useAuth } from '../auth/useAuth';
 import { WalletDropdown } from '../auth/WalletDropdown';
 import { Settings } from 'lucide-react';
+import { TokenGateInfo } from './TokenGateInfo';
+import { RoomName } from './RoomName';
 import type { Database } from '../../lib/types/supabase';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -8,21 +10,26 @@ type Room = Database['public']['Tables']['rooms']['Row'];
 type RoomHeaderProps = {
   room: Room;
   onOpenSettings?: () => void;
+  onManageTokenGate?: () => void;
 };
 
-export function RoomHeader({ room, onOpenSettings }: RoomHeaderProps) {
+export function RoomHeader({ room, onOpenSettings, onManageTokenGate }: RoomHeaderProps) {
   const { address } = useAuth();
-  const isOwner = address?.toLowerCase() === room.owner_address.toLowerCase();
+  const isOwner = address && room.owner_address && 
+    address.toLowerCase() === room.owner_address.toLowerCase();
 
   return (
     <div className="flex items-center justify-between p-4 border-b">
       <div>
-        <h1 className="text-xl font-bold">{room.name}</h1>
-        {room.token_address && (
-          <p className="text-sm text-gray-600">
-            Required: {room.required_tokens} tokens
-          </p>
-        )}
+        <h1 className="text-xl font-bold">
+          <RoomName name={room.name} />
+        </h1>
+        <TokenGateInfo
+          tokenAddress={room.token_address}
+          requiredTokens={room.required_tokens}
+          isOwner={isOwner}
+          onManageGate={onManageTokenGate}
+        />
       </div>
       <div className="flex items-center gap-4">
         {isOwner && onOpenSettings && (
