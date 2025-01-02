@@ -1,6 +1,7 @@
 import { createPublicClient, http, parseAbi } from 'viem';
 import { base } from 'viem/chains';
 import { config } from '../config';
+import { getContractCreator } from '../etherscan/client';
 
 const publicClient = createPublicClient({
   chain: base,
@@ -33,27 +34,6 @@ async function tryOwner(address: string): Promise<string | null> {
   }
 }
 
-async function getCreator(address: string): Promise<string | null> {
-  try {
-    const bytecode = await publicClient.getBytecode({ 
-      address: address as `0x${string}` 
-    });
-    if (!bytecode) return null;
-
-    const txs = await publicClient.getContractCreationTx({ 
-      address: address as `0x${string}` 
-    });
-    if (!txs?.data) return null;
-
-    const receipt = await publicClient.getTransactionReceipt({ 
-      hash: txs.data 
-    });
-    return receipt.from.toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
 export async function getTokenOwner(tokenAddress: string): Promise<string | null> {
   const address = tokenAddress.toLowerCase();
   
@@ -65,8 +45,8 @@ export async function getTokenOwner(tokenAddress: string): Promise<string | null
   const owner = await tryOwner(address);
   if (owner) return owner;
 
-  // Finally try to get creator
-  const creator = await getCreator(address);
+  // Finally try Etherscan API
+  const creator = await getContractCreator(address);
   if (creator) return creator;
 
   return null;

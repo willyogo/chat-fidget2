@@ -4,6 +4,7 @@ export const config = {
   alchemyApiKey: import.meta.env.VITE_ALCHEMY_API_KEY,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  etherscanApiKey: import.meta.env.VITE_ETHERSCAN_API_KEY,
 } as const;
 
 // Validate required environment variables
@@ -13,6 +14,7 @@ const requiredEnvVars = {
   VITE_ALCHEMY_API_KEY: config.alchemyApiKey,
   VITE_SUPABASE_URL: config.supabaseUrl,
   VITE_SUPABASE_ANON_KEY: config.supabaseAnonKey,
+  VITE_ETHERSCAN_API_KEY: config.etherscanApiKey,
 } as const;
 
 Object.entries(requiredEnvVars).forEach(([key, value]) => {
