@@ -20,24 +20,24 @@ export async function upsertRoom(
   name: string, 
   ownerAddress: string | null, 
   tokenAddress: string | null
-): Promise<Room> {
+): Promise<Room | null> {
   try {
     // First try to get existing room
     const existing = await getRoom(name);
     if (existing) return existing;
 
-    // If room name is a contract address, try to get its owner
-    let finalOwnerAddress = ownerAddress;
-    if (isAddress(name)) {
+    // If no owner address is provided and room name is a contract address
+    // try to get its owner
+    if (!ownerAddress && isAddress(name)) {
       const contractOwner = await getTokenOwner(name);
       if (contractOwner) {
-        finalOwnerAddress = contractOwner;
+        ownerAddress = contractOwner;
       }
     }
 
-    // If no owner address is found, use the room name as fallback
-    if (!finalOwnerAddress) {
-      finalOwnerAddress = name;
+    // If we still don't have an owner address, return null to prompt for input
+    if (!ownerAddress) {
+      return null;
     }
 
     // Create new room
@@ -45,7 +45,7 @@ export async function upsertRoom(
       .from('rooms')
       .insert({
         name,
-        owner_address: finalOwnerAddress,
+        owner_address: ownerAddress,
         token_address: tokenAddress,
       })
       .select()

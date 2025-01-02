@@ -1,4 +1,4 @@
-import { createContext, useEffect } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { useSearchParams } from './useSearchParams';
 import { useRoom } from '../../lib/hooks/useRoom';
 import { useRoomStore } from '../../lib/store/room';
@@ -10,13 +10,16 @@ type RoomContextType = {
   room: Room | null;
   isLoading: boolean;
   error: Error | null;
+  needsOwnerInput: boolean;
+  setOwnerAddress: (address: string) => void;
 };
 
 export const RoomContext = createContext<RoomContextType | undefined>(undefined);
 
 export function RoomProvider({ children }: { children: React.ReactNode }) {
-  const { roomName, ownerAddress } = useSearchParams();
-  const { room, isLoading, error } = useRoom(roomName, ownerAddress);
+  const { roomName } = useSearchParams();
+  const [manualOwnerAddress, setManualOwnerAddress] = useState<string | null>(null);
+  const { room, isLoading, error, needsOwnerInput } = useRoom(roomName, manualOwnerAddress);
   const { setRoom, setLoading, setError, subscribeToRoom } = useRoomStore();
 
   // Sync room loading state
@@ -52,7 +55,11 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   }));
 
   return (
-    <RoomContext.Provider value={roomData}>
+    <RoomContext.Provider value={{
+      ...roomData,
+      needsOwnerInput,
+      setOwnerAddress: setManualOwnerAddress
+    }}>
       {children}
     </RoomContext.Provider>
   );

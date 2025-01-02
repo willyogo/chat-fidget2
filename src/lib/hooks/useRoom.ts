@@ -9,6 +9,7 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [needsOwnerInput, setNeedsOwnerInput] = useState(false);
 
   useEffect(() => {
     if (!roomName) {
@@ -20,15 +21,18 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
 
     async function loadOrCreateRoom() {
       try {
-        const roomData = await upsertRoom(
-          roomName,
-          ownerAddress,
-          isAddress(roomName) ? roomName : null
-        );
+        // First try to get the room without creating it
+        const roomData = await upsertRoom(roomName, ownerAddress, isAddress(roomName) ? roomName : null);
         
         if (mounted) {
+          if (!roomData && !ownerAddress) {
+            setNeedsOwnerInput(true);
+            setIsLoading(false);
+            return;
+          }
           setRoom(roomData);
           setError(null);
+          setNeedsOwnerInput(false);
         }
       } catch (err) {
         console.error('Room error:', err);
@@ -46,5 +50,5 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
     return () => { mounted = false; };
   }, [roomName, ownerAddress]);
 
-  return { room, isLoading, error };
+  return { room, isLoading, error, needsOwnerInput };
 }
