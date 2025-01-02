@@ -25,7 +25,7 @@ export function TokenGateInfo({
       return (
         <button
           onClick={onManageGate}
-          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-2"
         >
           Add token gate
         </button>
@@ -38,7 +38,7 @@ export function TokenGateInfo({
   const tokenDisplay = isLoading ? '...' : symbol || 'tokens';
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-2 text-sm mt-3">
       <Shield 
         size={16} 
         className={hasAccess ? 'text-green-500' : 'text-yellow-500'} 

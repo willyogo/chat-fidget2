@@ -9,8 +9,17 @@
 html, body {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none; /* Prevent bounce/rubber-band effect */
 }
 
 #root {
   height: 100%;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Prevent scrolling when embedded */
+iframe {
+  overflow: hidden;
+  max-height: 100vh;
 }
