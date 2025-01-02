@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { getTokenOwner } from '../contracts/erc20';
 import { upsertRoom } from '../api/rooms';
 import { isAddress } from 'viem';
 import type { Database } from '../types/supabase';
@@ -17,40 +16,34 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
       return;
     }
 
+    let mounted = true;
+
     async function loadOrCreateRoom() {
       try {
-        // Determine owner address
-        let finalOwnerAddress = ownerAddress;
-        if (isAddress(roomName)) {
-          const tokenOwner = await getTokenOwner(roomName);
-          if (tokenOwner) {
-            finalOwnerAddress = tokenOwner;
-          }
-        }
-
-        // Use room name as fallback owner
-        if (!finalOwnerAddress) {
-          finalOwnerAddress = roomName;
-        }
-
-        // Upsert room (create if not exists, or get existing)
         const roomData = await upsertRoom(
           roomName,
-          finalOwnerAddress,
+          ownerAddress,
           isAddress(roomName) ? roomName : null
         );
         
-        setRoom(roomData);
-        setError(null);
+        if (mounted) {
+          setRoom(roomData);
+          setError(null);
+        }
       } catch (err) {
         console.error('Room error:', err);
-        setError(err instanceof Error ? err : new Error('Failed to load/create room'));
+        if (mounted) {
+          setError(err instanceof Error ? err : new Error('Failed to load room'));
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadOrCreateRoom();
+    return () => { mounted = false; };
   }, [roomName, ownerAddress]);
 
   return { room, isLoading, error };
