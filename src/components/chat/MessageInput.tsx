@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import { RoomContext } from '../room/RoomProvider';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
 import { sendMessage } from '../../lib/api/messages';
+import { useMessagesStore } from '../../lib/store/messages';
 
 export function MessageInput() {
   const [message, setMessage] = useState('');
@@ -15,6 +16,7 @@ export function MessageInput() {
     room?.required_tokens || 0,
     address
   );
+  const addMessage = useMessagesStore((state) => state.addMessage);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +31,8 @@ export function MessageInput() {
 
     setIsSubmitting(true);
     try {
-      await sendMessage(room.name, address, message);
+      const newMessage = await sendMessage(room.name, address, message);
+      addMessage(newMessage);
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);

@@ -1,15 +1,34 @@
-import { useContext, useRef, useEffect, useState } from 'react';
-import { useMessages } from '../../lib/hooks/useMessages';
+import { useRef, useEffect, useState } from 'react';
+import { useContext } from 'react';
 import { RoomContext } from '../room/RoomProvider';
 import { MessageItem } from './MessageItem';
 import { MessagesSquare } from 'lucide-react';
+import { useMessagesStore } from '../../lib/store/messages';
 
 export function MessageList() {
   const { room } = useContext(RoomContext)!;
-  const { messages, isLoading, hasMore, isLoadingMore, loadMore } = useMessages(room?.name);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+
+  const {
+    messages,
+    isLoading,
+    hasMore,
+    isLoadingMore,
+    loadMessages,
+    loadMoreMessages,
+    subscribeToRoom,
+  } = useMessagesStore();
+
+  // Load initial messages and subscribe to updates
+  useEffect(() => {
+    if (!room?.name) return;
+
+    loadMessages(room.name);
+    const unsubscribe = subscribeToRoom(room.name);
+    return () => unsubscribe();
+  }, [room?.name]);
 
   // Scroll to bottom on new messages if user was already at bottom
   useEffect(() => {
@@ -24,11 +43,11 @@ export function MessageList() {
     
     const { scrollHeight, scrollTop, clientHeight } = containerRef.current;
     const scrollPosition = scrollHeight - scrollTop - clientHeight;
-    setIsAtBottom(scrollPosition < 50); // Consider "at bottom" if within 50px
+    setIsAtBottom(scrollPosition < 50);
 
     // Check if scrolled to top for loading more messages
-    if (scrollTop === 0 && hasMore && !isLoadingMore) {
-      loadMore();
+    if (scrollTop === 0 && hasMore && !isLoadingMore && room?.name) {
+      loadMoreMessages(room.name);
     }
   };
 
