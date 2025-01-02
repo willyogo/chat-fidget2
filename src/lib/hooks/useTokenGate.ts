@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, formatUnits } from 'viem';
 import { base } from 'viem/chains';
 import { config } from '../config';
 
@@ -7,6 +7,23 @@ const publicClient = createPublicClient({
   chain: base,
   transport: http(`https://base-mainnet.g.alchemy.com/v2/${config.alchemyApiKey}`),
 });
+
+const erc20Abi = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'decimals',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+] as const;
 
 export function useTokenGate(tokenAddress: string | null, requiredTokens: number, userAddress: string | undefined) {
   const [hasAccess, setHasAccess] = useState(false);
@@ -21,20 +38,25 @@ export function useTokenGate(tokenAddress: string | null, requiredTokens: number
 
     async function checkBalance() {
       try {
-        const balance = await publicClient.readContract({
-          address: tokenAddress as `0x${string}`,
-          abi: [{
-            name: 'balanceOf',
-            type: 'function',
-            stateMutability: 'view',
-            inputs: [{ name: 'account', type: 'address' }],
-            outputs: [{ name: '', type: 'uint256' }],
-          }],
-          functionName: 'balanceOf',
-          args: [userAddress as `0x${string}`],
-        });
+        const [balance, decimals] = await Promise.all([
+          publicClient.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [userAddress as `0x${string}`],
+          }),
+          publicClient.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'decimals',
+          }),
+        ]);
 
-        setHasAccess(Number(balance) >= requiredTokens);
+        // Format the balance to a decimal number considering token decimals
+        const formattedBalance = Number(formatUnits(balance, decimals));
+        
+        // Compare the formatted balance with required tokens
+        setHasAccess(formattedBalance >= requiredTokens);
       } catch (error) {
         console.error('Error checking token balance:', error);
         setHasAccess(false);
