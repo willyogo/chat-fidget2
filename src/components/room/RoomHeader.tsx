@@ -1,20 +1,21 @@
+import { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { WalletDropdown } from '../auth/WalletDropdown';
 import { Settings } from 'lucide-react';
 import { TokenGateInfo } from './TokenGateInfo';
 import { RoomName } from './RoomName';
+import { TokenGateModal } from './TokenGateModal';
 import type { Database } from '../../lib/types/supabase';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 type RoomHeaderProps = {
   room: Room;
-  onOpenSettings?: () => void;
-  onManageTokenGate?: () => void;
 };
 
-export function RoomHeader({ room, onOpenSettings, onManageTokenGate }: RoomHeaderProps) {
+export function RoomHeader({ room }: RoomHeaderProps) {
   const { address } = useAuth();
+  const [showTokenGateModal, setShowTokenGateModal] = useState(false);
   const isOwner = address && room.owner_address && 
     address.toLowerCase() === room.owner_address.toLowerCase();
 
@@ -28,21 +29,21 @@ export function RoomHeader({ room, onOpenSettings, onManageTokenGate }: RoomHead
           tokenAddress={room.token_address}
           requiredTokens={room.required_tokens}
           isOwner={isOwner}
-          onManageGate={onManageTokenGate}
+          onManageGate={() => setShowTokenGateModal(true)}
         />
       </div>
       <div className="flex items-center gap-4">
-        {isOwner && onOpenSettings && (
-          <button
-            onClick={onOpenSettings}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            title="Room Settings"
-          >
-            <Settings size={20} />
-          </button>
-        )}
         <WalletDropdown />
       </div>
+
+      {showTokenGateModal && (
+        <TokenGateModal
+          roomName={room.name}
+          currentTokenAddress={room.token_address}
+          currentRequiredTokens={room.required_tokens}
+          onClose={() => setShowTokenGateModal(false)}
+        />
+      )}
     </div>
   );
 }
