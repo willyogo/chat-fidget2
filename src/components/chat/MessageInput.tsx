@@ -18,8 +18,12 @@ export function MessageInput() {
   );
   const addMessage = useMessagesStore((state) => state.addMessage);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    // Prevent default form submission if event exists
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!message.trim() || !room?.name || isSubmitting) return;
 
     if (!isAuthenticated) {
@@ -41,6 +45,14 @@ export function MessageInput() {
     }
   }
 
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   if (checkingAccess) {
     return <div className="text-center p-4">Checking access...</div>;
   }
@@ -54,22 +66,23 @@ export function MessageInput() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <div className="flex gap-2">
       <input
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        onKeyPress={handleKeyPress}
         placeholder={isAuthenticated ? "Type a message..." : "Connect wallet to chat"}
         className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         disabled={isSubmitting || !isAuthenticated}
       />
       <button
-        type="submit"
+        onClick={() => handleSubmit()}
         disabled={!message.trim() || isSubmitting}
         className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Send size={20} />
       </button>
-    </form>
+    </div>
   );
 }
