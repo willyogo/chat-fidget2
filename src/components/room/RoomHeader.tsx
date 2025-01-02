@@ -15,7 +15,7 @@ type RoomHeaderProps = {
 
 export function RoomHeader({ room, onOpenSettings, onManageTokenGate }: RoomHeaderProps) {
   const { address } = useAuth();
-  const isOwner = !!address && room.owner_address &&
+  const isOwner = !!(address && room.owner_address &&
     address.toLowerCase() === room.owner_address.toLowerCase());
 
   return (
