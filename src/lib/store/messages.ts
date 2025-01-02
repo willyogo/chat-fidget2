@@ -11,6 +11,7 @@ type MessagesState = {
   error: Error | null;
   hasMore: boolean;
   isLoadingMore: boolean;
+  currentChannel: string | null;
   addMessage: (message: Message) => void;
   loadMessages: (roomId: string) => Promise<void>;
   loadMoreMessages: (roomId: string) => Promise<void>;
@@ -23,10 +24,14 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   error: null,
   hasMore: true,
   isLoadingMore: false,
+  currentChannel: null,
 
   addMessage: (message) => {
+    // Prevent duplicate messages
     set((state) => ({
-      messages: [...state.messages, message],
+      messages: state.messages.some(m => m.id === message.id) 
+        ? state.messages 
+        : [...state.messages, message],
     }));
   },
 
@@ -68,8 +73,15 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   },
 
   subscribeToRoom: (roomId) => {
-    const subscription = supabase
-      .channel(`room:${roomId}`)
+    const { currentChannel } = get();
+    
+    // Unsubscribe from existing channel if it exists
+    if (currentChannel) {
+      supabase.channel(currentChannel).unsubscribe();
+    }
+
+    const channelName = `messages:${roomId}`;
+    const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -84,8 +96,11 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       )
       .subscribe();
 
+    set({ currentChannel: channelName });
+
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
+      set({ currentChannel: null });
     };
   },
 }));
