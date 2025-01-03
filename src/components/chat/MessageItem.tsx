@@ -1,8 +1,6 @@
-import type { Database } from '../../lib/types/supabase';
+import type { Message } from '../../lib/types/supabase';
 import { useAuth } from '../auth/useAuth';
 import { UserIdentity } from './UserIdentity';
-
-type Message = Database['public']['Tables']['messages']['Row'];
 
 export function MessageItem({ message }: { message: Message }) {
   const { address } = useAuth();
@@ -17,6 +15,7 @@ export function MessageItem({ message }: { message: Message }) {
         <UserIdentity 
           address={message.user_address} 
           className={`text-sm ${isOwn ? 'text-indigo-100' : 'text-gray-600'} mb-1`}
+          showTooltip={true}
         />
         <div>{message.content}</div>
       </div>

@@ -5,9 +5,15 @@ type UserIdentityProps = {
   address: string;
   className?: string;
   hideAvatar?: boolean;
+  showTooltip?: boolean;
 };
 
-export function UserIdentity({ address, className = '', hideAvatar = false }: UserIdentityProps) {
+export function UserIdentity({ 
+  address, 
+  className = '', 
+  hideAvatar = false,
+  showTooltip = false 
+}: UserIdentityProps) {
   const { identity, isLoading } = useFarcasterIdentity(address);
   const truncatedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
@@ -27,6 +33,10 @@ export function UserIdentity({ address, className = '', hideAvatar = false }: Us
       <span>{identity.username || truncatedAddress}</span>
     </div>
   );
+
+  if (!showTooltip) {
+    return content;
+  }
 
   return (
     <UserTooltip 
