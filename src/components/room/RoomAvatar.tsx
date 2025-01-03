@@ -1,23 +1,28 @@
 import { isAddress } from 'viem';
 import { useContractImage } from '../../lib/hooks/useContractImage';
+import type { Room } from '../../lib/types/supabase';
 
 type RoomAvatarProps = {
-  name: string;
+  room: Room;
   className?: string;
 };
 
-export function RoomAvatar({ name, className = '' }: RoomAvatarProps) {
-  const isContract = isAddress(name);
-  const { image, isLoading } = useContractImage(isContract ? name : null);
+export function RoomAvatar({ room, className = '' }: RoomAvatarProps) {
+  const isContract = isAddress(room.name);
+  const { image: contractImage } = useContractImage(
+    room.use_contract_avatar && isContract ? room.name : null
+  );
 
-  if (!isContract || isLoading || !image) {
+  const avatarUrl = room.use_contract_avatar ? contractImage : room.avatar_url;
+
+  if (!avatarUrl) {
     return null;
   }
 
   return (
     <img 
-      src={image} 
-      alt={`${name} avatar`}
+      src={avatarUrl} 
+      alt={`${room.name} avatar`}
       className={`w-8 h-8 rounded-full object-cover ${className}`}
     />
   );

@@ -1,100 +1,102 @@
-import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import type { Database } from '../../lib/types/supabase';
+import { Settings } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { isAddress } from 'viem';
-
-type Room = Database['public']['Tables']['rooms']['Row'];
+import { useOnClickOutside } from '../../lib/hooks/useOnClickOutside';
+import { uploadRoomAvatar, resetToContractAvatar } from '../../lib/api/avatars';
+import { useAuth } from '../auth/useAuth';
 
 type RoomSettingsProps = {
-  room: Room;
-  onClose: () => void;
+  roomName: string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
 };
 
-export function RoomSettings({ room, onClose }: RoomSettingsProps) {
-  const [tokenAddress, setTokenAddress] = useState(room.token_address || '');
-  const [requiredTokens, setRequiredTokens] = useState(room.required_tokens);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function RoomSettings({ roomName, onSuccess, onError }: RoomSettingsProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { address } = useAuth();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  useOnClickOutside(menuRef, () => setIsOpen(false));
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !address) return;
+
+    setIsUploading(true);
     try {
-      if (tokenAddress && !isAddress(tokenAddress)) {
-        throw new Error('Invalid token address');
-      }
-
-      const { error: updateError } = await supabase
-        .from('rooms')
-        .update({
-          token_address: tokenAddress || null,
-          required_tokens: tokenAddress ? requiredTokens : 0,
-        })
-        .eq('id', room.id);
-
-      if (updateError) throw updateError;
-      onClose();
+      await uploadRoomAvatar(roomName, file, address);
+      onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update room');
+      onError?.(err instanceof Error ? err : new Error('Upload failed'));
     } finally {
-      setIsSubmitting(false);
+      setIsUploading(false);
+      setIsOpen(false);
     }
-  }
+  };
+
+  const handleReset = async () => {
+    if (!address) return;
+    
+    setIsUploading(true);
+    try {
+      await resetToContractAvatar(roomName, address);
+      onSuccess?.();
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error('Reset failed'));
+    } finally {
+      setIsUploading(false);
+      setIsOpen(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Room Settings</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Token Address
-              </label>
-              <input
-                type="text"
-                value={tokenAddress}
-                onChange={(e) => setTokenAddress(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                placeholder="0x..."
-              />
-            </div>
-            {tokenAddress && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Required Tokens
-                </label>
-                <input
-                  type="number"
-                  value={requiredTokens}
-                  onChange={(e) => setRequiredTokens(Number(e.target.value))}
-                  min="0"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-              </div>
-            )}
-            {error && (
-              <p className="text-red-600 text-sm">{error}</p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+        disabled={isUploading}
+      >
+        <Settings size={16} className="text-gray-600" />
+      </button>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".png,.jpg,.jpeg,.svg"
+        className="hidden"
+      />
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+            disabled={isUploading}
+          >
+            Upload Avatar
+          </button>
+          
+          {isAddress(roomName) && (
+            <button
+              onClick={handleReset}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              disabled={isUploading}
+            >
+              Reset to Contract Avatar
+            </button>
+          )}
+          
+          <button
+            onClick={() => setIsOpen(false)}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }

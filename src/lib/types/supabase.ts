@@ -16,6 +16,9 @@ export interface Database {
           created_at: string
           token_address: string | null
           required_tokens: number
+          avatar_url: string | null
+          avatar_updated_at: string | null
+          use_contract_avatar: boolean
         }
         Insert: {
           name: string
@@ -23,6 +26,9 @@ export interface Database {
           created_at?: string
           token_address?: string | null
           required_tokens?: number
+          avatar_url?: string | null
+          avatar_updated_at?: string | null
+          use_contract_avatar?: boolean
         }
         Update: {
           name?: string
@@ -30,6 +36,9 @@ export interface Database {
           created_at?: string
           token_address?: string | null
           required_tokens?: number
+          avatar_url?: string | null
+          avatar_updated_at?: string | null
+          use_contract_avatar?: boolean
         }
       }
       messages: {
@@ -64,3 +73,6 @@ export interface Database {
     }
   }
 }
+
+export type Room = Database['public']['Tables']['rooms']['Row'];
+export type Message = Database['public']['Tables']['messages']['Row'];

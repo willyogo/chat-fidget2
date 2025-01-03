@@ -4,9 +4,8 @@ import { WalletDropdown } from '../auth/WalletDropdown';
 import { TokenGateTooltip } from './TokenGateTooltip';
 import { RoomName } from './RoomName';
 import { TokenGateModal } from './TokenGateModal';
-import type { Database } from '../../lib/types/supabase';
-
-type Room = Database['public']['Tables']['rooms']['Row'];
+import { RoomSettings } from './RoomSettings';
+import type { Room } from '../../lib/types/supabase';
 
 type RoomHeaderProps = {
   room: Room;
@@ -15,15 +14,16 @@ type RoomHeaderProps = {
 export function RoomHeader({ room }: RoomHeaderProps) {
   const { address } = useAuth();
   const [showTokenGateModal, setShowTokenGateModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isOwner = address && room.owner_address && 
     address.toLowerCase() === room.owner_address.toLowerCase();
 
   return (
     <div className="flex items-center justify-between p-3 md:p-4 border-b bg-white shadow-sm">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <h1 className="text-lg md:text-xl font-bold truncate">
-            <RoomName name={room.name} />
+            <RoomName room={room} />
           </h1>
           <TokenGateTooltip
             tokenAddress={room.token_address}
@@ -31,7 +31,17 @@ export function RoomHeader({ room }: RoomHeaderProps) {
             isOwner={isOwner}
             onManageGate={() => setShowTokenGateModal(true)}
           />
+          {isOwner && (
+            <RoomSettings
+              roomName={room.name}
+              onError={(err) => setError(err.message)}
+              onSuccess={() => setError(null)}
+            />
+          )}
         </div>
+        {error && (
+          <p className="text-sm text-red-600 mt-1">{error}</p>
+        )}
       </div>
       <div className="ml-4 flex-shrink-0">
         <WalletDropdown />
