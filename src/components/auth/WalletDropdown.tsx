@@ -7,28 +7,63 @@ import { useOnClickOutside } from '../../lib/hooks/useOnClickOutside';
 export function WalletDropdown() {
   const { login, logout, isAuthenticated, address } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-  const [dropdownAlignment, setDropdownAlignment] = useState<'right' | 'left'>('right');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { identity } = useFarcasterIdentity(address);
 
   useOnClickOutside(dropdownRef, () => setIsOpen(false));
 
-  // Calculate dropdown position
+  // Position the dropdown when it opens
   useEffect(() => {
-    if (!isOpen || !buttonRef.current) return;
+    if (!isOpen || !buttonRef.current || !dropdownRef.current) return;
 
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const spaceBelow = viewportHeight - buttonRect.bottom;
-    const spaceRight = viewportWidth - buttonRect.right;
-    const dropdownHeight = 180; // Approximate height of dropdown
-    const dropdownWidth = 256; // w-64 = 16rem = 256px
+    const positionDropdown = () => {
+      const button = buttonRef.current?.getBoundingClientRect();
+      const dropdown = dropdownRef.current;
+      if (!button || !dropdown) return;
 
-    setDropdownPosition(spaceBelow < dropdownHeight ? 'top' : 'bottom');
-    setDropdownAlignment(spaceRight < dropdownWidth ? 'left' : 'right');
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      // Get dropdown dimensions after it's rendered
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const dropdownHeight = dropdownRect.height;
+      const dropdownWidth = dropdownRect.width;
+
+      // Calculate available space
+      const spaceBelow = viewportHeight - button.bottom;
+      const spaceRight = viewportWidth - button.left;
+
+      // Position vertically
+      if (spaceBelow >= dropdownHeight) {
+        dropdown.style.top = `${button.bottom + window.scrollY}px`;
+        dropdown.style.bottom = 'auto';
+      } else {
+        dropdown.style.bottom = `${viewportHeight - button.top + window.scrollY}px`;
+        dropdown.style.top = 'auto';
+      }
+
+      // Position horizontally
+      if (spaceRight >= dropdownWidth) {
+        dropdown.style.left = `${button.left}px`;
+        dropdown.style.right = 'auto';
+      } else {
+        dropdown.style.right = `${viewportWidth - button.right}px`;
+        dropdown.style.left = 'auto';
+      }
+    };
+
+    // Initial positioning
+    positionDropdown();
+
+    // Update position on scroll or resize
+    window.addEventListener('scroll', positionDropdown, true);
+    window.addEventListener('resize', positionDropdown);
+
+    return () => {
+      window.removeEventListener('scroll', positionDropdown, true);
+      window.removeEventListener('resize', positionDropdown);
+    };
   }, [isOpen]);
 
   if (!isAuthenticated) {
@@ -46,7 +81,7 @@ export function WalletDropdown() {
   const fullAddress = address && `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <button 
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -60,11 +95,8 @@ export function WalletDropdown() {
 
       {isOpen && (
         <div 
-          className={`absolute ${
-            dropdownPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
-          } ${
-            dropdownAlignment === 'right' ? 'right-0' : 'left-0'
-          } w-64 bg-white rounded-lg shadow-lg border py-2 z-50`}
+          ref={dropdownRef}
+          className="fixed w-64 bg-white rounded-lg shadow-lg border py-2 z-50"
         >
           <div className="px-4 py-2 border-b">
             <div className="flex items-center gap-2">

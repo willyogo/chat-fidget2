@@ -9,6 +9,7 @@ type UserTooltipProps = {
 export function UserTooltip({ address, farcasterUsername, children }: UserTooltipProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number>();
 
   useEffect(() => {
@@ -18,6 +19,65 @@ export function UserTooltip({ address, farcasterUsername, children }: UserToolti
       }
     };
   }, []);
+
+  // Position the tooltip when it becomes visible
+  useEffect(() => {
+    if (!showTooltip || !triggerRef.current || !tooltipRef.current) return;
+
+    const positionTooltip = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const tooltip = tooltipRef.current;
+      if (!trigger || !tooltip) return;
+
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      // Get tooltip dimensions after it's rendered
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const tooltipHeight = tooltipRect.height;
+      const tooltipWidth = tooltipRect.width;
+
+      // Calculate available space
+      const spaceBelow = viewportHeight - trigger.bottom;
+      const spaceRight = viewportWidth - trigger.left;
+
+      // Reset styles
+      tooltip.style.top = '';
+      tooltip.style.bottom = '';
+      tooltip.style.left = '';
+      tooltip.style.right = '';
+
+      // Position vertically
+      if (spaceBelow >= tooltipHeight) {
+        tooltip.style.top = `${trigger.bottom + window.scrollY}px`;
+        tooltip.style.bottom = 'auto';
+      } else {
+        tooltip.style.bottom = `${viewportHeight - trigger.top + window.scrollY}px`;
+        tooltip.style.top = 'auto';
+      }
+
+      // Position horizontally
+      if (spaceRight >= tooltipWidth) {
+        tooltip.style.left = `${trigger.left}px`;
+        tooltip.style.right = 'auto';
+      } else {
+        tooltip.style.right = `${viewportWidth - trigger.right}px`;
+        tooltip.style.left = 'auto';
+      }
+    };
+
+    // Initial positioning
+    positionTooltip();
+
+    // Update position on scroll or resize
+    window.addEventListener('scroll', positionTooltip, true);
+    window.addEventListener('resize', positionTooltip);
+
+    return () => {
+      window.removeEventListener('scroll', positionTooltip, true);
+      window.removeEventListener('resize', positionTooltip);
+    };
+  }, [showTooltip]);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -47,19 +107,21 @@ export function UserTooltip({ address, farcasterUsername, children }: UserToolti
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="cursor-pointer">
+      <div 
+        ref={triggerRef}
+        className="cursor-pointer"
+      >
         {children}
       </div>
 
       {showTooltip && (
         <div 
           ref={tooltipRef}
-          className="absolute left-0 mt-1 z-50 bg-white rounded-lg shadow-lg border min-w-[200px]"
+          className="fixed bg-white rounded-lg shadow-lg border min-w-[200px] z-50"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <div className="py-1">
-            {/* BaseScan Link - Always show */}
             <a
               href={`https://basescan.org/address/${address}`}
               target="_blank"
@@ -74,38 +136,36 @@ export function UserTooltip({ address, farcasterUsername, children }: UserToolti
               View on BaseScan
             </a>
 
-            {/* Warpcast Link - Only show if has Farcaster */}
             {farcasterUsername && (
-              <a
-                href={`https://warpcast.com/${farcasterUsername}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                <img 
-                  src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAMFBMVEVGK5FHcExDLYxELJJCLoxDL4hHK5NFLJL//f5DKoo3GYEsCHjFvNOglL/c1epvXamoqKe6AAAABnRSTlOAAEdrior+Vk3zAAABB0lEQVQ4jaWTi46EIAxFWdjppTDq///t0hYF7GRnkmlijfbQh96GnzcWPgViWC3FBYgA3Q1pAL9wAAh4nEAClADZZeFmsQN2frrQATIgQl/0o2cGQSgqkIiuCsyYuwgKhHFy7lJsAESl1mKeIV57mIDyzDlX8c9Ss/gFAPhob0lCuVJzB98ASGyTUD625lwJqnvLK6G8tTp7dUCRoDSSd4F8BuY8GbMHpEY7br7CAdBBzzaKz0B06AjmfYn2VCRUzNMC9B9RdDz7mC8BHYVZ73gNSNxibFOkLpghAUl9/Wxw7JKb1EgzgK7JaBLzgkn/yF6Ax1icBJ41qwLhuK5euu3eunrfbPcfZQQUHa9wuUMAAAAASUVORK5CYII="
-                  alt="Warpcast"
-                  className="w-4 h-4"
-                />
-                View on Warpcast
-              </a>
-            )}
+              <>
+                <a
+                  href={`https://warpcast.com/${farcasterUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <img 
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAMFBMVEVGK5FHcExDLYxELJJCLoxDL4hHK5NFLJL//f5DKoo3GYEsCHjFvNOglL/c1epvXamoqKe6AAAABnRSTlOAAEdrior+Vk3zAAABB0lEQVQ4jaWTi46EIAxFWdjppTDq///t0hYF7GRnkmlijfbQh96GnzcWPgViWC3FBYgA3Q1pAL9wAAh4nEAClADZZeFmsQN2frrQATIgQl/0o2cGQSgqkIiuCsyYuwgKhHFy7lJsAESl1mKeIV57mIDyzDlX8c9Ss/gFAPhob0lCuVJzB98ASGyTUD625lwJqnvLK6G8tTp7dUCRoDSSd4F8BuY8GbMHpEY7br7CAdBBzzaKz0B06AjmfYn2VCRUzNMC9B9RdDz7mC8BHYVZ73gNSNxibFOkLpghAUl9/Wxw7JKb1EgzgK7JaBLzgkn/yF6Ax1icBJ41qwLhuK5euu3eunrfbPcfZQQUHa9wuUMAAAAASUVORK5CYII="
+                    alt="Warpcast"
+                    className="w-4 h-4"
+                  />
+                  View on Warpcast
+                </a>
 
-            {/* Nounspace Link - Only show if has Farcaster */}
-            {farcasterUsername && (
-              <a
-                href={`https://www.nounspace.com/s/${farcasterUsername}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                <img 
-                  src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAA10lEQVR4AWJwL/ChKwa0U95GDIQAEKxAmaLv6KugCQr4FuiAPuiDkAqISdEFN5o3WHkDM/v2hsUP4RC2MYQoMxBEggUooHfMzKsCC5FA5ISxEd2ZdzlhYMADR3yD0LDnplfoGZhW30RF6MujRCGKBW6FBbFRGIDpFcYCp7KQpIUhJwzkBCbebUIoU0PKfARhJ3RpYTpsEsIlUYFa92ZXh02NwnVIM8JzRahvERpgM2G92rSmJmSO8NueOze+ac+T2tFG5Ir1USeYF3zXCdQK8f7DewiHcAgvZLfm1PG+WmUAAAAASUVORK5CYII="
-                  alt="nounspace"
-                  className="w-4 h-4"
-                />
-                View on nounspace
-              </a>
+                <a
+                  href={`https://www.nounspace.com/s/${farcasterUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <img 
+                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAA10lEQVR4AWJwL/ChKwa0U95GDIQAEKxAmaLv6KugCQr4FuiAPuiDkAqISdEFN5o3WHkDM/v2hsUP4RC2MYQoMxBEggUooHfMzKsCC5FA5ISxEd2ZdzlhYMADR3yD0LDnplfoGZhW30RF6MujRCGKBW6FBbFRGIDpFcYCp7KQpIUhJwzkBCbebUIoU0PKfARhJ3RpYTpsEsIlUYFa92ZXh02NwnVIM8JzRahvERpgM2G92rSmJmSO8NueOze+ac+T2tFG5Ir1USeYF3zXCdQK8f7DewiHcAgvZLfm1PG+WmUAAAAASUVORK5CYII="
+                    alt="nounspace"
+                    className="w-4 h-4"
+                  />
+                  View on nounspace
+                </a>
+              </>
             )}
           </div>
         </div>
