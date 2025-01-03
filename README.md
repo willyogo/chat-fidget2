@@ -15,7 +15,6 @@ Real-time chat app where room owners can gate access using ERC20 tokens on Base.
 - 🏷️ Automatic token name and symbol detection
 - 🔍 Smart contract owner detection
 - 📝 Manual owner address assignment for non-contract rooms
-- 🔐 Case-insensitive address handling
 
 ## Prerequisites
 
@@ -80,6 +79,11 @@ src/
 ```
 
 ## Room Creation & Management
+
+### Room Creation
+- To create a room, pass the name of the room as a query parameter, like so:
+  1. https://chat-fidget.vercel.app/?room=example
+  2. https://chat-fidget.vercel.app/?room=0x48C6740BcF807d6C47C864FaEEA15Ed4dA3910Ab
 
 ### Automatic Owner Detection
 - For contract addresses: Automatically detects owner through:
