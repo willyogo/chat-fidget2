@@ -18,7 +18,8 @@ export function OwnerAddressModal({ roomName, onSubmit, onClose }: OwnerAddressM
       setError('Please enter a valid Ethereum address');
       return;
     }
-    onSubmit(ownerAddress);
+    // Normalize the address to lowercase before submitting
+    onSubmit(ownerAddress.toLowerCase());
   };
 
   return (
