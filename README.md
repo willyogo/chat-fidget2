@@ -1,8 +1,8 @@
 # Token-Gated Chat Rooms
 
-A decentralized chat application where room owners can gate access using ERC20 tokens on Base. Built with React, Supabase, and Privy.
+Real-time chat app where room owners can gate access using ERC20 tokens on Base. Built with React, Supabase, and Privy to power the Chat Fidget for [nounspace.com](https://nounspace.com), but works anywhere. 100% of the code was written by https://bolt.new with supervision from [@willywonka.eth](https://nounspace.com/s/willywonka.eth) and [@sktbrd.eth](https://www.nounspace.com/s/skateboard).
 
-![Token-Gated Chat](https://images.unsplash.com/photo-1611462985358-60d3498e0364?auto=format&fit=crop&q=80&w=2000)
+👾🚀🌈
 
 ## Features
 
@@ -15,7 +15,10 @@ A decentralized chat application where room owners can gate access using ERC20 t
 - 🏷️ Automatic token name and symbol detection
 - 🔍 Smart contract owner detection
 - 📝 Manual owner address assignment for non-contract rooms
+<<<<<<< HEAD
 - 🔐 Case-insensitive address handling
+=======
+>>>>>>> 8f502ee7f7b83a13a10cc825211e06b819b4187b
 
 ## Prerequisites
 
@@ -81,6 +84,14 @@ src/
 
 ## Room Creation & Management
 
+<<<<<<< HEAD
+=======
+### Room Creation
+- To create a room, pass the name of the room as a query parameter, like so:
+  1. https://chat-fidget.vercel.app/?room=example
+  2. https://chat-fidget.vercel.app/?room=0x48C6740BcF807d6C47C864FaEEA15Ed4dA3910Ab
+
+>>>>>>> 8f502ee7f7b83a13a10cc825211e06b819b4187b
 ### Automatic Owner Detection
 - For contract addresses: Automatically detects owner through:
   1. `deployer()` function call
@@ -155,4 +166,8 @@ MIT License. See [LICENSE](LICENSE) for details.
 - [Airstack](https://airstack.xyz/) for Web3 data
 - [Base](https://base.org/) for L2 infrastructure
 - [Etherscan](https://etherscan.io/) for contract verification
+<<<<<<< HEAD
 - [Alchemy](https://www.alchemy.com/) for RPC access
+=======
+- [Alchemy](https://www.alchemy.com/) for RPC access
+>>>>>>> 8f502ee7f7b83a13a10cc825211e06b819b4187b
