@@ -1,5 +1,6 @@
-import { useState, useContext } from 'react';
-import { Send } from 'lucide-react';
+import { useState, useContext, useRef, useEffect } from 'react';
+import { Send, Smile } from 'lucide-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useAuth } from '../auth/useAuth';
 import { RoomContext } from '../room/RoomProvider';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
@@ -9,6 +10,7 @@ import { useMessagesStore } from '../../lib/store/messages';
 export function MessageInput() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { room } = useContext(RoomContext)!;
   const { login, address, isAuthenticated } = useAuth();
   const { hasAccess, isLoading: checkingAccess } = useTokenGate(
@@ -17,6 +19,24 @@ export function MessageInput() {
     address
   );
   const addMessage = useMessagesStore((state) => state.addMessage);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  // Handle clicking outside of emoji picker
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        emojiPickerRef.current && 
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        !emojiButtonRef.current?.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   async function handleSubmit() {
     if (!message.trim() || !room?.name || isSubmitting) return;
@@ -47,6 +67,11 @@ export function MessageInput() {
     }
   };
 
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setMessage(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
   if (checkingAccess) {
     return <div className="text-center p-4">Checking access...</div>;
   }
@@ -60,7 +85,7 @@ export function MessageInput() {
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 relative">
       <input
         type="text"
         value={message}
@@ -70,6 +95,16 @@ export function MessageInput() {
         className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         disabled={isSubmitting || !isAuthenticated}
       />
+      
+      <button
+        ref={emojiButtonRef}
+        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+        className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+        disabled={!isAuthenticated}
+      >
+        <Smile size={20} />
+      </button>
+
       <button
         onClick={handleSubmit}
         disabled={!message.trim() || isSubmitting}
@@ -77,6 +112,16 @@ export function MessageInput() {
       >
         <Send size={20} />
       </button>
+
+      {showEmojiPicker && (
+        <div 
+          ref={emojiPickerRef}
+          className="absolute right-0 bottom-full mb-2"
+          style={{ zIndex: 1000 }}
+        >
+          <EmojiPicker onEmojiClick={onEmojiClick} />
+        </div>
+      )}
     </div>
   );
 }
