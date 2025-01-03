@@ -1,4 +1,5 @@
 import { useFarcasterIdentity } from '../../lib/hooks/useFarcasterIdentity';
+import { UserTooltip } from './UserTooltip';
 
 type UserIdentityProps = {
   address: string;
@@ -14,20 +15,25 @@ export function UserIdentity({ address, className = '', hideAvatar = false }: Us
     return <span className={className}>Loading...</span>;
   }
 
-  if (identity.username) {
-    return (
-      <div className={`flex items-center gap-2 ${className}`}>
-        {!hideAvatar && identity.avatar && (
-          <img 
-            src={identity.avatar} 
-            alt={identity.username}
-            className="w-5 h-5 rounded-full"
-          />
-        )}
-        <span>{identity.username}</span>
-      </div>
-    );
-  }
+  const content = (
+    <div className={`flex items-center gap-2 ${className}`}>
+      {!hideAvatar && identity.avatar && (
+        <img 
+          src={identity.avatar} 
+          alt={identity.username || truncatedAddress}
+          className="w-5 h-5 rounded-full"
+        />
+      )}
+      <span>{identity.username || truncatedAddress}</span>
+    </div>
+  );
 
-  return <span className={className}>{truncatedAddress}</span>;
+  return (
+    <UserTooltip 
+      address={address}
+      farcasterUsername={identity.username}
+    >
+      {content}
+    </UserTooltip>
+  );
 }
