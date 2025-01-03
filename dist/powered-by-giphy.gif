@@ -1,0 +1,1 @@
+<command>curl -o powered-by-giphy.gif https://raw.githubusercontent.com/Giphy/GiphyAPI/master/api_giphy_logo.gif</command>

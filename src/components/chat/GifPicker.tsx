@@ -24,7 +24,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     async function loadTrending() {
       try {
         setIsLoading(true);
-        const { data } = await giphyClient.trending({ limit: 8 }); // Reduced from 20 to 8
+        const { data } = await giphyClient.trending({ limit: 8 });
         setGifs(data);
         setError(null);
       } catch (err) {
@@ -48,7 +48,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     searchTimeout.current = window.setTimeout(async () => {
       try {
         setIsLoading(true);
-        const { data } = await giphyClient.search(query, { limit: 8 }); // Reduced from 20 to 8
+        const { data } = await giphyClient.search(query, { limit: 8 });
         setGifs(data);
         setError(null);
       } catch (err) {
@@ -93,7 +93,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
       </div>
 
       {/* Content */}
-      <div className="h-[200px] overflow-y-auto p-2"> {/* Reduced height from 350px to 200px */}
+      <div className="h-[200px] overflow-y-auto p-2">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
@@ -120,6 +120,15 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* GIPHY Attribution */}
+      <div className="p-2 border-t bg-gray-50 flex items-center justify-end">
+        <img
+          src="/powered-by-giphy.gif"
+          alt="Powered by GIPHY"
+          className="h-5"
+        />
       </div>
     </div>
   );
