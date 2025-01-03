@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { UserAvatar } from './UserAvatar';
 import { useFarcasterIdentity } from '../../lib/hooks/useFarcasterIdentity';
@@ -7,10 +7,29 @@ import { useOnClickOutside } from '../../lib/hooks/useOnClickOutside';
 export function WalletDropdown() {
   const { login, logout, isAuthenticated, address } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+  const [dropdownAlignment, setDropdownAlignment] = useState<'right' | 'left'>('right');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const { identity } = useFarcasterIdentity(address);
 
   useOnClickOutside(dropdownRef, () => setIsOpen(false));
+
+  // Calculate dropdown position
+  useEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceRight = viewportWidth - buttonRect.right;
+    const dropdownHeight = 180; // Approximate height of dropdown
+    const dropdownWidth = 256; // w-64 = 16rem = 256px
+
+    setDropdownPosition(spaceBelow < dropdownHeight ? 'top' : 'bottom');
+    setDropdownAlignment(spaceRight < dropdownWidth ? 'left' : 'right');
+  }, [isOpen]);
 
   if (!isAuthenticated) {
     return (
@@ -29,6 +48,7 @@ export function WalletDropdown() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded-lg transition-colors"
       >
@@ -39,7 +59,13 @@ export function WalletDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border py-2">
+        <div 
+          className={`absolute ${
+            dropdownPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
+          } ${
+            dropdownAlignment === 'right' ? 'right-0' : 'left-0'
+          } w-64 bg-white rounded-lg shadow-lg border py-2 z-50`}
+        >
           <div className="px-4 py-2 border-b">
             <div className="flex items-center gap-2">
               {address && <UserAvatar address={address} />}
