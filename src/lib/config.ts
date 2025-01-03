@@ -1,3 +1,5 @@
+import { GiphyFetch } from '@giphy/js-fetch-api';
+
 export const config = {
   privyAppId: import.meta.env.VITE_PRIVY_APP_ID,
   airstackApiKey: import.meta.env.VITE_AIRSTACK_API_KEY,
@@ -5,6 +7,7 @@ export const config = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
   etherscanApiKey: import.meta.env.VITE_ETHERSCAN_API_KEY,
+  giphyApiKey: import.meta.env.VITE_GIPHY_API_KEY || 'your-api-key',
 } as const;
 
 // Validate required environment variables
@@ -15,6 +18,7 @@ const requiredEnvVars = {
   VITE_SUPABASE_URL: config.supabaseUrl,
   VITE_SUPABASE_ANON_KEY: config.supabaseAnonKey,
   VITE_ETHERSCAN_API_KEY: config.etherscanApiKey,
+  VITE_GIPHY_API_KEY: config.giphyApiKey,
 } as const;
 
 Object.entries(requiredEnvVars).forEach(([key, value]) => {
@@ -22,3 +26,6 @@ Object.entries(requiredEnvVars).forEach(([key, value]) => {
     throw new Error(`Missing required environment variable: ${key}`);
   }
 });
+
+// Initialize Giphy client
+export const giphyClient = new GiphyFetch(config.giphyApiKey);

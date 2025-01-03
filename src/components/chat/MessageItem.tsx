@@ -5,6 +5,7 @@ import { UserIdentity } from './UserIdentity';
 export function MessageItem({ message }: { message: Message }) {
   const { address } = useAuth();
   const isOwn = address?.toLowerCase() === message.user_address.toLowerCase();
+  const isGif = message.content.startsWith('http') && message.content.includes('giphy.com');
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -17,7 +18,16 @@ export function MessageItem({ message }: { message: Message }) {
           className={`text-sm ${isOwn ? 'text-indigo-100' : 'text-gray-600'} mb-1`}
           showTooltip={true}
         />
-        <div>{message.content}</div>
+        {isGif ? (
+          <img 
+            src={message.content} 
+            alt="GIF"
+            className="max-w-full rounded-md"
+            loading="lazy"
+          />
+        ) : (
+          <div>{message.content}</div>
+        )}
       </div>
     </div>
   );

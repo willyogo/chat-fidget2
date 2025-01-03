@@ -1,16 +1,19 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { Send, Smile } from 'lucide-react';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { Send, Smile, Image } from 'lucide-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { useAuth } from '../auth/useAuth';
 import { RoomContext } from '../room/RoomProvider';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
 import { sendMessage } from '../../lib/api/messages';
 import { useMessagesStore } from '../../lib/store/messages';
+import { GifPicker } from './GifPicker';
+import type { IGif } from '@giphy/js-types';
 
 export function MessageInput() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const { room } = useContext(RoomContext)!;
   const { login, address, isAuthenticated } = useAuth();
   const { hasAccess, isLoading: checkingAccess } = useTokenGate(
@@ -22,7 +25,6 @@ export function MessageInput() {
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
-  // Handle clicking outside of emoji picker
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -38,8 +40,8 @@ export function MessageInput() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  async function handleSubmit() {
-    if (!message.trim() || !room?.name || isSubmitting) return;
+  async function handleSubmit(content = message) {
+    if (!content.trim() || !room?.name || isSubmitting) return;
 
     if (!isAuthenticated) {
       login();
@@ -50,7 +52,7 @@ export function MessageInput() {
 
     setIsSubmitting(true);
     try {
-      const newMessage = await sendMessage(room.name, address, message);
+      const newMessage = await sendMessage(room.name, address, content);
       addMessage(newMessage);
       setMessage('');
     } catch (error) {
@@ -70,6 +72,11 @@ export function MessageInput() {
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setMessage(prev => prev + emojiData.emoji);
     setShowEmojiPicker(false);
+  };
+
+  const handleGifSelect = async (gif: IGif) => {
+    setShowGifPicker(false);
+    await handleSubmit(gif.images.original.url);
   };
 
   if (checkingAccess) {
@@ -98,7 +105,10 @@ export function MessageInput() {
       
       <button
         ref={emojiButtonRef}
-        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+        onClick={() => {
+          setShowEmojiPicker(!showEmojiPicker);
+          setShowGifPicker(false);
+        }}
         className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
         disabled={!isAuthenticated}
       >
@@ -106,7 +116,18 @@ export function MessageInput() {
       </button>
 
       <button
-        onClick={handleSubmit}
+        onClick={() => {
+          setShowGifPicker(!showGifPicker);
+          setShowEmojiPicker(false);
+        }}
+        className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+        disabled={!isAuthenticated}
+      >
+        <Image size={20} />
+      </button>
+
+      <button
+        onClick={() => handleSubmit()}
         disabled={!message.trim() || isSubmitting}
         className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -119,8 +140,26 @@ export function MessageInput() {
           className="absolute right-0 bottom-full mb-2"
           style={{ zIndex: 1000 }}
         >
-          <EmojiPicker onEmojiClick={onEmojiClick} />
+          <EmojiPicker 
+            onEmojiClick={onEmojiClick}
+            theme={Theme.LIGHT}
+            width={280}
+            height={350}
+            previewConfig={{
+              showPreview: false
+            }}
+            searchPlaceHolder="Search emojis..."
+            skinTonesDisabled
+            lazyLoadEmojis
+          />
         </div>
+      )}
+
+      {showGifPicker && (
+        <GifPicker
+          onSelect={handleGifSelect}
+          onClose={() => setShowGifPicker(false)}
+        />
       )}
     </div>
   );
