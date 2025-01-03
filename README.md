@@ -1,17 +1,21 @@
 # Token-Gated Chat Rooms
 
-A decentralized chat application where room owners can gate access using ERC20 tokens on Base. Built with React, Supabase, and Privy.
+Real-time chat app where room owners can gate access using ERC20 tokens on Base. Built with React, Supabase, and Privy to power the Chat Fidget for [nounspace.com](https://nounspace.com), but works anywhere. 100% of the code was written by https://bolt.new with supervision from [@willywonka.eth](https://nounspace.com/s/willywonka.eth) and [@sktbrd.eth](https://www.nounspace.com/s/skateboard).
 
-![Token-Gated Chat](https://images.unsplash.com/photo-1611462985358-60d3498e0364?auto=format&fit=crop&q=80&w=2000)
+👾🚀🌈
 
 ## Features
 
-- 💬 Real-time chat rooms
+- 💬 Real-time chat rooms with automatic message updates
 - 🔒 Token-gating with ERC20 tokens on Base
 - 👤 Web3 authentication with Privy
 - 🎭 Farcaster identity integration
 - ⚡ Real-time updates with Supabase
 - 🎨 Beautiful UI with Tailwind CSS
+- 🏷️ Automatic token name and symbol detection
+- 🔍 Smart contract owner detection
+- 📝 Manual owner address assignment for non-contract rooms
+- 🔐 Case-insensitive address handling
 
 ## Prerequisites
 
@@ -20,6 +24,7 @@ A decentralized chat application where room owners can gate access using ERC20 t
 - A Privy account
 - An Airstack API key
 - An Alchemy API key
+- An Etherscan API key
 
 ## Environment Variables
 
@@ -31,6 +36,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_PRIVY_APP_ID=your_privy_app_id
 VITE_AIRSTACK_API_KEY=your_airstack_api_key
 VITE_ALCHEMY_API_KEY=your_alchemy_api_key
+VITE_ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
 ## Getting Started
@@ -64,15 +70,36 @@ src/
 ├── lib/               # Utility functions and hooks
 │   ├── airstack/      # Airstack API integration
 │   ├── api/           # API functions
+│   ├── auth/          # Authentication utilities
 │   ├── contracts/     # Smart contract interactions
+│   ├── etherscan/     # Etherscan API integration
 │   ├── hooks/         # Custom React hooks
+│   ├── store/         # State management
 │   └── types/         # TypeScript type definitions
 └── main.tsx           # Application entry point
 ```
 
-## Database Schema
+## Room Creation & Management
 
-The application uses two main tables in Supabase:
+### Automatic Owner Detection
+- For contract addresses: Automatically detects owner through:
+  1. `deployer()` function call
+  2. `owner()` function call
+  3. Contract creation transaction
+  4. Etherscan API fallback
+
+### Manual Owner Assignment
+- For non-contract rooms or when automatic detection fails
+- Prompts user to input owner address
+- Handles addresses case-insensitively
+
+### Token Gating
+- Set required token and amount for room access
+- Real-time token balance checking
+- Automatic token symbol detection
+- BaseScan integration for token verification
+
+## Database Schema
 
 ### Rooms Table
 - `name` (text, primary key): Room identifier
@@ -105,6 +132,9 @@ The application uses two main tables in Supabase:
 - Add tests for new features
 - Update documentation as needed
 - Ensure all tests pass before submitting PR
+- Use TypeScript for type safety
+- Keep components small and focused
+- Extract reusable logic into hooks
 
 ## Building for Production
 
@@ -124,3 +154,5 @@ MIT License. See [LICENSE](LICENSE) for details.
 - [Supabase](https://supabase.io/) for real-time database
 - [Airstack](https://airstack.xyz/) for Web3 data
 - [Base](https://base.org/) for L2 infrastructure
+- [Etherscan](https://etherscan.io/) for contract verification
+- [Alchemy](https://www.alchemy.com/) for RPC access
