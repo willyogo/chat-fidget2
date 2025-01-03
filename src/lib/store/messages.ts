@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Database } from '../types/supabase';
-import { supabase } from '../supabase';
+import { supabase } from '../auth/supabase';
 import { getMessages } from '../api/messages';
 
 type Message = Database['public']['Tables']['messages']['Row'];
@@ -27,11 +27,10 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   currentChannel: null,
 
   addMessage: (message) => {
-    // Prevent duplicate messages
     set((state) => ({
-      messages: state.messages.some(m => m.id === message.id) 
-        ? state.messages 
-        : [...state.messages, message],
+      messages: state.messages.some(m => m.id === message.id)
+        ? state.messages
+        : [...state.messages, message]
     }));
   },
 
@@ -75,7 +74,6 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
   subscribeToRoom: (roomId) => {
     const { currentChannel } = get();
     
-    // Unsubscribe from existing channel if it exists
     if (currentChannel) {
       supabase.channel(currentChannel).unsubscribe();
     }

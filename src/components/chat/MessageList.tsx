@@ -1,26 +1,28 @@
-import { useRef, useEffect, useState } from 'react';
-import { useContext } from 'react';
+import { useEffect, useContext } from 'react';
 import { RoomContext } from '../room/RoomProvider';
 import { MessageItem } from './MessageItem';
-import { MessagesSquare } from 'lucide-react';
+import { MessagesSquare, Loader2 } from 'lucide-react';
+import { useVirtualMessages } from '../../lib/hooks/useVirtualMessages';
 import { useMessagesStore } from '../../lib/store/messages';
 
 export function MessageList() {
   const { room } = useContext(RoomContext)!;
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-
   const {
     messages,
-    isLoading,
-    hasMore,
+    scrollRef,
+    handleScroll,
+    scrollToBottom,
     isLoadingMore,
+    hasMore
+  } = useVirtualMessages(room?.name || '');
+
+  const {
+    isLoading,
     loadMessages,
-    loadMoreMessages,
     subscribeToRoom,
   } = useMessagesStore();
 
+  // Load initial messages and set up subscription
   useEffect(() => {
     if (!room?.name) return;
 
@@ -29,28 +31,17 @@ export function MessageList() {
     return () => unsubscribe();
   }, [room?.name]);
 
+  // Auto-scroll to bottom on initial load and new messages
   useEffect(() => {
-    if (isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isLoading) {
+      scrollToBottom();
     }
-  }, [messages, isAtBottom]);
-
-  const handleScroll = () => {
-    if (!containerRef.current) return;
-    
-    const { scrollHeight, scrollTop, clientHeight } = containerRef.current;
-    const scrollPosition = scrollHeight - scrollTop - clientHeight;
-    setIsAtBottom(scrollPosition < 50);
-
-    if (scrollTop === 0 && hasMore && !isLoadingMore && room?.name) {
-      loadMoreMessages(room.name);
-    }
-  };
+  }, [isLoading, scrollToBottom]);
 
   if (isLoading) {
     return (
       <div className="flex-1 flex justify-center items-center">
-        <div className="animate-pulse text-gray-500">Loading messages...</div>
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
       </div>
     );
   }
@@ -67,19 +58,19 @@ export function MessageList() {
 
   return (
     <div 
-      ref={containerRef}
+      ref={scrollRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto min-h-0 space-y-4 mb-4 px-2 md:px-4"
+      className="flex-1 overflow-y-auto min-h-0 space-y-4 mb-4 px-2 md:px-4 scroll-smooth"
     >
-      {isLoadingMore && (
-        <div className="text-center py-2 text-gray-500">
-          Loading more messages...
+      {isLoadingMore && hasMore && (
+        <div className="text-center py-2">
+          <Loader2 className="w-5 h-5 animate-spin text-indigo-600 mx-auto" />
         </div>
       )}
+      
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} />
       ))}
-      <div ref={messagesEndRef} />
     </div>
   );
 }
