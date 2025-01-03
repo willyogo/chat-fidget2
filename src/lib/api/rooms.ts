@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabase } from '../auth/supabase';
 import { isAddress } from 'viem';
 import { getTokenOwner } from '../contracts/owner';
 import type { Database } from '../types/supabase';
@@ -45,8 +45,10 @@ export async function upsertRoom(
       .from('rooms')
       .insert({
         name,
-        owner_address: ownerAddress,
+        owner_address: ownerAddress.toLowerCase(),
         token_address: tokenAddress,
+        required_tokens: 0,
+        use_contract_avatar: isAddress(name)
       })
       .select()
       .single();
@@ -66,4 +68,32 @@ export async function upsertRoom(
     console.error('Error upserting room:', error);
     throw error;
   }
+}
+
+export async function getPopularRooms(limit = 11): Promise<Room[]> {
+  const { data, error } = await supabase
+    .from('room_stats')
+    .select(`
+      room_name,
+      message_count,
+      unique_users,
+      rooms (
+        name,
+        owner_address,
+        token_address,
+        required_tokens,
+        avatar_url,
+        use_contract_avatar
+      )
+    `)
+    .order('message_count', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return data.map(stat => ({
+    ...stat.rooms,
+    message_count: stat.message_count,
+    unique_users: stat.unique_users
+  }));
 }
