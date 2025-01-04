@@ -7,6 +7,7 @@ import { useTokenGate } from '../../lib/hooks/useTokenGate';
 import { sendMessage } from '../../lib/api/messages';
 import { useMessagesStore } from '../../lib/store/messages';
 import { GifPicker } from './GifPicker';
+import { useFocusManagement } from '../../lib/hooks/useFocusManagement';
 import type { IGif } from '@giphy/js-types';
 
 export function MessageInput() {
@@ -24,6 +25,12 @@ export function MessageInput() {
   const addMessage = useMessagesStore((state) => state.addMessage);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const { elementRef: inputRef, focusElement: focusInput } = useFocusManagement();
+
+  useEffect(() => {
+    // Focus input on mount
+    focusInput();
+  }, [focusInput]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -55,6 +62,7 @@ export function MessageInput() {
       const newMessage = await sendMessage(room.name, address, content);
       addMessage(newMessage);
       setMessage('');
+      focusInput(); // Restore focus after sending
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -72,11 +80,13 @@ export function MessageInput() {
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setMessage(prev => prev + emojiData.emoji);
     setShowEmojiPicker(false);
+    focusInput(); // Restore focus after emoji selection
   };
 
   const handleGifSelect = async (gif: IGif) => {
     setShowGifPicker(false);
     await handleSubmit(gif.images.original.url);
+    focusInput(); // Restore focus after GIF selection
   };
 
   if (checkingAccess) {
@@ -94,6 +104,7 @@ export function MessageInput() {
   return (
     <div className="flex gap-2 relative">
       <input
+        ref={inputRef}
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
