@@ -16,7 +16,7 @@ export default function App() {
   return (
     <PrivyProvider>
       <RoomProvider>
-        <div className="h-screen max-h-screen overflow-hidden bg-gray-50">
+        <div className={roomName ? 'chat-room' : ''}>
           {roomName ? <ChatRoom /> : <HomePage />}
         </div>
       </RoomProvider>

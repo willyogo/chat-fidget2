@@ -1,63 +1,165 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMessagesStore } from '../store/messages';
-import type { Message } from '../types/supabase';
 
-const BATCH_SIZE = 50;
-const BUFFER_SIZE = 20;
+// Improved throttle with proper typing and cancelation
+function throttle<T extends (...args: any[]) => void>(
+  func: T, 
+  limit: number
+): [(...args: Parameters<T>) => void, () => void] {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let lastRun = 0;
 
-export function useVirtualMessages(roomId: string) {
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: BATCH_SIZE });
+  function cancel() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  }
+
+  function throttled(...args: Parameters<T>) {
+    const now = Date.now();
+
+    if (lastRun && now < lastRun + limit) {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        lastRun = now;
+        func(...args);
+      }, limit);
+    } else {
+      lastRun = now;
+      func(...args);
+    }
+  }
+
+  return [throttled, cancel];
+}
+
+const SCROLL_THRESHOLD = 50;
+const LOAD_MORE_THRESHOLD = 200;
+
+export function useVirtualMessages(roomId: string, loadingImages: number) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lastScrollPosition = useRef<number>(0);
-  const { messages, loadMoreMessages, isLoadingMore, hasMore } = useMessagesStore();
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [initialScrollDone, setInitialScrollDone] = useState(false);
+  const lastScrollTop = useRef(0);
+  const isScrolling = useRef(false);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
+  
+  const { 
+    messages, 
+    loadMoreMessages, 
+    isLoadingMore, 
+    hasMore, 
+    isLoading 
+  } = useMessagesStore();
 
-  // Get only the messages within the visible range plus buffer
-  const visibleMessages = messages.slice(
-    Math.max(0, visibleRange.start - BUFFER_SIZE),
-    Math.min(messages.length, visibleRange.end + BUFFER_SIZE)
-  );
+  const isAtBottom = useCallback(() => {
+    if (!scrollRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    return scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
+  }, []);
 
-  const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
+  const scrollToBottom = useCallback((smooth = false) => {
+    if (!scrollRef.current || isScrolling.current) return;
+    
+    isScrolling.current = true;
+    const container = scrollRef.current;
+
+    // Clear any existing scroll timeout
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+
+    // Use double RAF for more reliable scrolling
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!container) return;
+        
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: smooth ? 'smooth' : 'auto'
+        });
+        
+        // Reset scrolling flag after animation
+        scrollTimeout.current = setTimeout(() => {
+          isScrolling.current = false;
+        }, smooth ? 300 : 50);
+      });
+    });
+  }, []);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isScrolling.current) return;
+
     const container = e.currentTarget;
     const { scrollTop, scrollHeight, clientHeight } = container;
     
-    // Save last scroll position for maintaining position when loading older messages
-    lastScrollPosition.current = scrollTop;
+    // Update last known scroll position
+    lastScrollTop.current = scrollTop;
 
-    // Check if scrolled near top and should load more
-    if (scrollTop < 100 && hasMore && !isLoadingMore) {
+    // Check if we're at the bottom
+    const atBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
+    setShouldScrollToBottom(atBottom);
+
+    // Load more messages when near top
+    if (scrollTop < LOAD_MORE_THRESHOLD && hasMore && !isLoadingMore) {
       const prevHeight = scrollHeight;
-      await loadMoreMessages(roomId);
-      
-      // Maintain scroll position after loading more messages
-      if (scrollRef.current) {
-        const newHeight = scrollRef.current.scrollHeight;
-        const heightDiff = newHeight - prevHeight;
-        scrollRef.current.scrollTop = lastScrollPosition.current + heightDiff;
-      }
+      loadMoreMessages(roomId).then(() => {
+        requestAnimationFrame(() => {
+          if (scrollRef.current) {
+            const newHeight = scrollRef.current.scrollHeight;
+            const heightDiff = newHeight - prevHeight;
+            scrollRef.current.scrollTop = lastScrollTop.current + heightDiff;
+          }
+        });
+      });
     }
-
-    // Update visible range based on scroll position
-    const itemHeight = 60; // Approximate height of a message
-    const start = Math.floor(scrollTop / itemHeight);
-    const end = start + Math.ceil(clientHeight / itemHeight);
-    
-    setVisibleRange({ start, end });
   }, [roomId, hasMore, isLoadingMore, loadMoreMessages]);
 
-  const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  // Initial scroll to bottom
+  useEffect(() => {
+    if (!isLoading && messages.length > 0 && !initialScrollDone && loadingImages === 0) {
+      scrollToBottom();
+      setShouldScrollToBottom(true);
+      setInitialScrollDone(true);
     }
+  }, [isLoading, messages.length, initialScrollDone, loadingImages, scrollToBottom]);
+
+  // Auto-scroll for new messages when at bottom
+  useEffect(() => {
+    if (shouldScrollToBottom && initialScrollDone && loadingImages === 0) {
+      scrollToBottom(true);
+    }
+  }, [messages.length, shouldScrollToBottom, initialScrollDone, loadingImages, scrollToBottom]);
+
+  // Reset state on room change
+  useEffect(() => {
+    setInitialScrollDone(false);
+    setShouldScrollToBottom(true);
+    lastScrollTop.current = 0;
+    isScrolling.current = false;
+    
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+  }, [roomId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
   }, []);
 
   return {
-    messages: visibleMessages,
-    allMessages: messages,
+    messages,
     scrollRef,
     handleScroll,
     scrollToBottom,
     isLoadingMore,
-    hasMore
+    hasMore,
+    isAtBottom
   };
 }

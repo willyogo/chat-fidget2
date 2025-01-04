@@ -1,6 +1,7 @@
 import type { Message } from '../../lib/types/supabase';
 import { useAuth } from '../auth/useAuth';
 import { UserIdentity } from './UserIdentity';
+import { ImageLoader } from '../common/ImageLoader';
 
 export function MessageItem({ message }: { message: Message }) {
   const { address } = useAuth();
@@ -19,11 +20,10 @@ export function MessageItem({ message }: { message: Message }) {
           showTooltip={true}
         />
         {isGif ? (
-          <img 
+          <ImageLoader 
             src={message.content} 
             alt="GIF"
             className="max-w-full rounded-md"
-            loading="lazy"
           />
         ) : (
           <div>{message.content}</div>

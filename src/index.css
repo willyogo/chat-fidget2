@@ -8,12 +8,16 @@
 
 html, body {
   height: 100%;
-  overflow: hidden;
   overscroll-behavior: none; /* Prevent bounce/rubber-band effect */
 }
 
 #root {
   height: 100%;
+}
+
+/* Only prevent scrolling in chat room view */
+.chat-room {
+  height: 100vh;
   max-height: 100vh;
   overflow: hidden;
 }

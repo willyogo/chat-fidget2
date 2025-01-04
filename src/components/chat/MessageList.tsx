@@ -4,9 +4,12 @@ import { MessageItem } from './MessageItem';
 import { MessagesSquare, Loader2 } from 'lucide-react';
 import { useVirtualMessages } from '../../lib/hooks/useVirtualMessages';
 import { useMessagesStore } from '../../lib/store/messages';
+import { useImageLoading } from '../../lib/hooks/useImageLoading';
 
 export function MessageList() {
   const { room } = useContext(RoomContext)!;
+  const { loadingImages, onImageLoad, onImageStart } = useImageLoading();
+  
   const {
     messages,
     scrollRef,
@@ -14,7 +17,7 @@ export function MessageList() {
     scrollToBottom,
     isLoadingMore,
     hasMore
-  } = useVirtualMessages(room?.name || '');
+  } = useVirtualMessages(room?.name || '', loadingImages);
 
   const {
     isLoading,
@@ -31,12 +34,16 @@ export function MessageList() {
     return () => unsubscribe();
   }, [room?.name]);
 
-  // Auto-scroll to bottom on initial load and new messages
+  // Auto-scroll to bottom on initial load
   useEffect(() => {
-    if (!isLoading) {
-      scrollToBottom();
+    if (!isLoading && !loadingImages) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToBottom();
+        });
+      });
     }
-  }, [isLoading, scrollToBottom]);
+  }, [isLoading, loadingImages, scrollToBottom]);
 
   if (isLoading) {
     return (
@@ -69,7 +76,12 @@ export function MessageList() {
       )}
       
       {messages.map((message) => (
-        <MessageItem key={message.id} message={message} />
+        <MessageItem 
+          key={message.id} 
+          message={message}
+          onImageLoad={onImageLoad}
+          onImageStart={onImageStart}
+        />
       ))}
     </div>
   );

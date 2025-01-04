@@ -42,7 +42,7 @@ export function PopularRooms() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-2xl mx-auto mt-12 px-4">
+      <div className="w-full max-w-2xl mx-auto mt-12">
         <div className="animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-16 bg-gray-100 rounded-lg" />
@@ -54,7 +54,7 @@ export function PopularRooms() {
 
   if (error) {
     return (
-      <div className="w-full max-w-2xl mx-auto mt-12 px-4">
+      <div className="w-full max-w-2xl mx-auto mt-12">
         <div className="bg-red-50 text-red-800 p-4 rounded-lg">
           {error}
         </div>
@@ -63,33 +63,35 @@ export function PopularRooms() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-12 px-4">
+    <div className="w-full max-w-2xl mx-auto mt-12">
       <div className="flex items-center gap-2 mb-6">
         <Trophy className="w-5 h-5 text-yellow-500" />
         <h2 className="text-xl font-semibold">Popular Rooms</h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {rooms.map((room, index) => (
           <a
             key={room.name}
-            href={`/?room=${room.name}`}
+            href={`/?room=${encodeURIComponent(room.name)}`}
             className="block bg-white rounded-lg border p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-8 text-lg font-bold text-gray-400">
+              <div className="flex-shrink-0 w-6 text-lg font-bold text-gray-400">
                 #{index + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <RoomName room={room} className="text-lg font-medium" />
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <MessageSquare className="w-4 h-4" />
-                    {room.message_count.toLocaleString()} messages
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {room.unique_users.toLocaleString()} users
+                <div className="flex items-center justify-between gap-4">
+                  <RoomName room={room} className="text-lg font-medium truncate" />
+                  <div className="flex items-center gap-4 text-sm text-gray-600 flex-shrink-0">
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="w-4 h-4" />
+                      {room.message_count.toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {room.unique_users.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>
