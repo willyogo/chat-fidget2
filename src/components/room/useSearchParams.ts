@@ -29,6 +29,7 @@ export function useSearchParams() {
   return {
     roomName: params.get('room'),
     ownerAddress: params.get('owner'),
+    viewport: params.get('viewport'),
     updateParams
   };
 }

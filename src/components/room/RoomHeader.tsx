@@ -5,6 +5,7 @@ import { TokenGateTooltip } from './TokenGateTooltip';
 import { RoomName } from './RoomName';
 import { TokenGateModal } from './TokenGateModal';
 import { RoomSettings } from './RoomSettings';
+import { useSearchParams } from './useSearchParams';
 import type { Room } from '../../lib/types/supabase';
 
 type RoomHeaderProps = {
@@ -15,15 +16,21 @@ export function RoomHeader({ room }: RoomHeaderProps) {
   const { address } = useAuth();
   const [showTokenGateModal, setShowTokenGateModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { viewport } = useSearchParams();
   const isOwner = address && room.owner_address && 
     address.toLowerCase() === room.owner_address.toLowerCase();
+  const isMobileView = viewport === 'mobile';
 
   return (
     <div className="flex items-center justify-between p-3 md:p-4 border-b bg-white shadow-sm">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h1 className="text-lg md:text-xl font-bold truncate">
-            <RoomName room={room} />
+            {isMobileView ? (
+              <span>Chat</span>
+            ) : (
+              <RoomName room={room} />
+            )}
           </h1>
           <TokenGateTooltip
             tokenAddress={room.token_address}
