@@ -6,10 +6,13 @@ import type { Database } from '../types/supabase';
 type Message = Database['public']['Tables']['messages']['Row'];
 
 export async function getMessages(roomId: string, limit = 50, before?: string): Promise<Message[]> {
+  // Normalize room ID to lowercase
+  const normalizedRoomId = roomId.toLowerCase();
+  
   let query = supabase
     .from('messages')
     .select()
-    .eq('room_id', roomId)
+    .eq('room_id', normalizedRoomId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -29,6 +32,9 @@ export async function sendMessage(
   userAddress: string,
   content: string
 ): Promise<Message> {
+  // Normalize room ID to lowercase
+  const normalizedRoomId = roomId.toLowerCase();
+  
   const { data: farcasterData } = await queryAirstack(GET_FARCASTER_IDENTITY, { 
     address: userAddress.toLowerCase() 
   });
@@ -38,7 +44,7 @@ export async function sendMessage(
   const { data, error } = await supabase
     .from('messages')
     .insert({
-      room_id: roomId,
+      room_id: normalizedRoomId,
       user_address: userAddress,
       content: content.trim(),
       farcaster_username: social?.profileName || null,

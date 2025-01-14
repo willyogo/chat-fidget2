@@ -6,10 +6,13 @@ import type { Database } from '../types/supabase';
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 export async function getRoom(name: string): Promise<Room | null> {
+  // Normalize room name to lowercase
+  const normalizedName = name.toLowerCase();
+  
   const { data, error } = await supabase
     .from('rooms')
     .select()
-    .eq('name', name)
+    .eq('name', normalizedName)
     .single();
     
   if (error && error.code !== 'PGRST116') throw error;
@@ -22,14 +25,17 @@ export async function upsertRoom(
   tokenAddress: string | null
 ): Promise<Room | null> {
   try {
+    // Normalize room name to lowercase
+    const normalizedName = name.toLowerCase();
+
     // First try to get existing room
-    const existing = await getRoom(name);
+    const existing = await getRoom(normalizedName);
     if (existing) return existing;
 
     // If no owner address is provided and room name is a contract address
     // try to get its owner
-    if (!ownerAddress && isAddress(name)) {
-      const contractOwner = await getTokenOwner(name);
+    if (!ownerAddress && isAddress(normalizedName)) {
+      const contractOwner = await getTokenOwner(normalizedName);
       if (contractOwner) {
         ownerAddress = contractOwner;
       }
@@ -40,15 +46,15 @@ export async function upsertRoom(
       return null;
     }
 
-    // Create new room
+    // Create new room with normalized name
     const { data, error } = await supabase
       .from('rooms')
       .insert({
-        name,
+        name: normalizedName,
         owner_address: ownerAddress.toLowerCase(),
         token_address: tokenAddress,
         required_tokens: 0,
-        use_contract_avatar: isAddress(name)
+        use_contract_avatar: isAddress(normalizedName)
       })
       .select()
       .single();
@@ -57,7 +63,7 @@ export async function upsertRoom(
       // If we hit a unique constraint error, try to get the room again
       // as it might have been created by another concurrent request
       if (error.code === '23505') {
-        const existingRoom = await getRoom(name);
+        const existingRoom = await getRoom(normalizedName);
         if (existingRoom) return existingRoom;
       }
       throw error;

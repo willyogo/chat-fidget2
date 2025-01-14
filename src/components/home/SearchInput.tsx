@@ -11,7 +11,8 @@ export function SearchInput({ onSubmit }: SearchInputProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (roomName.trim()) {
-      onSubmit(roomName.trim());
+      // Convert to lowercase before submitting
+      onSubmit(roomName.trim().toLowerCase());
     }
   };
 
