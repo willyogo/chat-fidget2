@@ -1,6 +1,6 @@
 import { getContract } from 'viem';
 import { publicClient } from './client';
-import { DEPLOYER_ABI, OWNER_ABI } from './abi';
+import { DEPLOYER_ABI, OWNER_ABI, CREATOR_ABI } from './abi';
 
 async function tryDeployer(address: string): Promise<string | null> {
   try {
@@ -30,6 +30,22 @@ async function tryOwner(address: string): Promise<string | null> {
     return owner.toLowerCase();
   } catch (error) {
     console.log('No owner function:', error);
+    return null;
+  }
+}
+
+async function tryCreator(address: string): Promise<string | null> {
+  try {
+    const contract = getContract({
+      address: address as `0x${string}`,
+      abi: CREATOR_ABI,
+      publicClient,
+    });
+
+    const creator = await contract.read.creator();
+    return creator.toLowerCase();
+  } catch (error) {
+    console.log('No creator function:', error);
     return null;
   }
 }
@@ -68,11 +84,18 @@ export async function getTokenOwner(tokenAddress: string): Promise<string | null
       return owner;
     }
 
-    // Finally try to get creator
-    const creator = await getCreator(address);
+    // Then try creator()
+    const creator = await tryCreator(address);
     if (creator) {
       console.log('Found creator:', creator);
       return creator;
+    }
+
+    // Finally try to get creator from transaction
+    const txCreator = await getCreator(address);
+    if (txCreator) {
+      console.log('Found creator from transaction:', txCreator);
+      return txCreator;
     }
 
     console.log('No owner found for token:', address);

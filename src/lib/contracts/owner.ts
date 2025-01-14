@@ -34,20 +34,50 @@ async function tryOwner(address: string): Promise<string | null> {
   }
 }
 
+async function tryCreator(address: string): Promise<string | null> {
+  try {
+    const result = await publicClient.readContract({
+      address: address as `0x${string}`,
+      abi: parseAbi(['function creator() view returns (address)']),
+      functionName: 'creator',
+    });
+    return (result as string).toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export async function getTokenOwner(tokenAddress: string): Promise<string | null> {
   const address = tokenAddress.toLowerCase();
   
   // Try deployer() first
   const deployer = await tryDeployer(address);
-  if (deployer) return deployer;
+  if (deployer) {
+    console.log('Found deployer:', deployer);
+    return deployer;
+  }
 
   // Then try owner()
   const owner = await tryOwner(address);
-  if (owner) return owner;
+  if (owner) {
+    console.log('Found owner:', owner);
+    return owner;
+  }
 
-  // Finally try Etherscan API
-  const creator = await getContractCreator(address);
-  if (creator) return creator;
+  // Then try creator()
+  const creator = await tryCreator(address);
+  if (creator) {
+    console.log('Found creator:', creator);
+    return creator;
+  }
 
+  // Finally try Etherscan API as fallback
+  const etherscanCreator = await getContractCreator(address);
+  if (etherscanCreator) {
+    console.log('Found creator from Etherscan:', etherscanCreator);
+    return etherscanCreator;
+  }
+
+  console.log('No owner found for token:', address);
   return null;
 }

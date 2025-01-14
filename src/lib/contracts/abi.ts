@@ -14,3 +14,11 @@ export const OWNER_ABI = [{
   inputs: [],
   outputs: [{ name: '', type: 'address' }],
 }] as const;
+
+export const CREATOR_ABI = [{
+  name: 'creator',
+  type: 'function',
+  stateMutability: 'view',
+  inputs: [],
+  outputs: [{ name: '', type: 'address' }],
+}] as const;
