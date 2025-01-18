@@ -1,13 +1,27 @@
 import { useNavigate } from 'react-router-dom';
 import { SearchInput } from './SearchInput';
 import { PopularRooms } from './PopularRooms';
+import { useRoomStore } from '../../lib/store/room';
+import { useEffect } from 'react';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const reset = useRoomStore((state) => state.reset);
+
+  // Reset room state when homepage mounts
+  useEffect(() => {
+    reset();
+  }, [reset]);
 
   const handleRoomSubmit = (roomName: string) => {
-    const encodedRoomName = encodeURIComponent(roomName.trim());
-    navigate(`/?room=${encodedRoomName}`);
+    if (!roomName.trim()) return;
+    
+    // Reset room state before navigation
+    reset();
+    
+    const encodedRoomName = encodeURIComponent(roomName.trim().toLowerCase());
+    // Force a full navigation by using window.location
+    window.location.href = `/?room=${encodedRoomName}`;
   };
 
   return (

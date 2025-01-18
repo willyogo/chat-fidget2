@@ -5,12 +5,17 @@ export function useSearchParams() {
 
   useEffect(() => {
     function handleUrlChange() {
-      setParams(new URLSearchParams(window.location.search));
+      const newParams = new URLSearchParams(window.location.search);
+      setParams(newParams);
+      console.log('URL params changed:', Object.fromEntries(newParams.entries()));
     }
 
     // Listen for both popstate and pushstate events
     window.addEventListener('popstate', handleUrlChange);
     window.addEventListener('pushstate', handleUrlChange);
+    
+    // Initial check
+    handleUrlChange();
     
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
@@ -21,7 +26,11 @@ export function useSearchParams() {
   // Add a helper function to update URL params
   const updateParams = useCallback((key: string, value: string) => {
     const newParams = new URLSearchParams(window.location.search);
-    newParams.set(key, value);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
     window.history.pushState({}, '', `?${newParams.toString()}`);
     setParams(newParams);
   }, []);

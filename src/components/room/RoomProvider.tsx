@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from './useSearchParams';
 import { useRoom } from '../../lib/hooks/useRoom';
 import { useRoomStore } from '../../lib/store/room';
@@ -20,45 +20,55 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   const { roomName } = useSearchParams();
   const [manualOwnerAddress, setManualOwnerAddress] = useState<string | null>(null);
   const { room, isLoading, error, needsOwnerInput } = useRoom(roomName, manualOwnerAddress);
-  const { setRoom, setLoading, setError, subscribeToRoom } = useRoomStore();
+  const { setRoom, setLoading, setError, subscribeToRoom, reset } = useRoomStore();
 
-  // Sync room loading state
-  useEffect(() => {
-    setLoading(isLoading);
-  }, [isLoading, setLoading]);
+  // Memoize the setOwnerAddress callback
+  const handleSetOwnerAddress = useCallback((address: string) => {
+    console.log('Setting manual owner address:', address);
+    setManualOwnerAddress(address);
+  }, []);
 
-  // Sync room error state
+  // Reset state when component unmounts or room name changes
   useEffect(() => {
-    setError(error);
-  }, [error, setError]);
+    console.log('Room name changed, resetting state:', roomName);
+    setManualOwnerAddress(null);
+    return () => {
+      console.log('RoomProvider unmounting, cleaning up');
+      reset();
+    };
+  }, [roomName, reset]);
 
-  // Sync room data
+  // Set up room subscription when we have a valid room
   useEffect(() => {
-    if (room) {
-      setRoom(room);
+    if (!roomName) {
+      console.log('No room name, skipping subscription');
+      return;
     }
-  }, [room, setRoom]);
-
-  // Subscribe to room updates
-  useEffect(() => {
-    if (!roomName) return;
     
+    console.log('Setting up room subscription for:', roomName);
     const unsubscribe = subscribeToRoom(roomName);
-    return () => unsubscribe();
+    
+    return () => {
+      console.log('Cleaning up room subscription for:', roomName);
+      unsubscribe();
+    };
   }, [roomName, subscribeToRoom]);
 
-  // Use room data from store
-  const roomData = useRoomStore((state) => ({
-    room: state.room,
-    isLoading: state.isLoading,
-    error: state.error,
-  }));
+  // Sync room state
+  useEffect(() => {
+    console.log('Syncing room state:', { room, isLoading, error });
+    setRoom(room);
+    setLoading(isLoading);
+    setError(error);
+  }, [room, isLoading, error, setRoom, setLoading, setError]);
 
   return (
     <RoomContext.Provider value={{
-      ...roomData,
+      room,
+      isLoading,
+      error,
       needsOwnerInput,
-      setOwnerAddress: setManualOwnerAddress
+      setOwnerAddress: handleSetOwnerAddress
     }}>
       {children}
     </RoomContext.Provider>

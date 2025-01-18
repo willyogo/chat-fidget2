@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { isAddress } from 'viem';
 import { supabase } from '../../lib/auth/supabase';
-import { useAuth } from '../auth/useAuth';
+import { useAuth } from '../../components/auth/useAuth';
+import { useRoomStore } from '../../lib/store/room';
 
 type TokenGateModalProps = {
   roomName: string;
@@ -22,6 +23,7 @@ export function TokenGateModal({
   const [requiredTokens, setRequiredTokens] = useState(currentRequiredTokens);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setRoom = useRoomStore(state => state.setRoom);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export function TokenGateModal({
       }
 
       const normalizedAddress = address.toLowerCase();
+      const normalizedRoomName = roomName.toLowerCase();
 
       // Get current auth status
       const { data: { session } } = await supabase.auth.getSession();
@@ -56,9 +59,10 @@ export function TokenGateModal({
           token_address: tokenAddress || null,
           required_tokens: tokenAddress ? requiredTokens : 0,
         })
-        .eq('name', roomName)
+        .eq('name', normalizedRoomName)
         .eq('owner_address', normalizedAddress)
-        .select();
+        .select('*')
+        .single();
 
       if (updateError) {
         console.error('Update error:', updateError);
@@ -67,9 +71,14 @@ export function TokenGateModal({
 
       console.log('Update response:', {
         success: true,
-        affected_rows: data?.length || 0,
         updated_data: data
       });
+
+      // Immediately update the room state to ensure UI updates
+      if (data) {
+        console.log('Updating room state with:', data);
+        setRoom(data);
+      }
 
       onClose();
     } catch (err) {

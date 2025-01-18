@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Shield } from 'lucide-react';
 import { useTokenSymbol } from '../../lib/hooks/useTokenSymbol';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
-import { useAuth } from '../auth/useAuth';
+import { useAuth } from '../../components/auth/useAuth';
+import { useRoomStore } from '../../lib/store/room';
 
 type TokenGateTooltipProps = {
   tokenAddress: string | null;
@@ -12,17 +13,34 @@ type TokenGateTooltipProps = {
 };
 
 export function TokenGateTooltip({ 
-  tokenAddress, 
-  requiredTokens, 
+  tokenAddress: initialTokenAddress, 
+  requiredTokens: initialRequiredTokens, 
   isOwner,
   onManageGate 
 }: TokenGateTooltipProps) {
   const { address } = useAuth();
-  const { symbol, isLoading } = useTokenSymbol(tokenAddress);
-  const { hasAccess } = useTokenGate(tokenAddress, requiredTokens, address);
+  const room = useRoomStore(state => state.room);
+  const version = useRoomStore(state => state.version); // Subscribe to version changes
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number>();
+
+  // Use room store values, falling back to props
+  const tokenAddress = room?.token_address ?? initialTokenAddress;
+  const requiredTokens = room?.required_tokens ?? initialRequiredTokens;
+
+  const { symbol, isLoading } = useTokenSymbol(tokenAddress);
+  const { hasAccess } = useTokenGate(tokenAddress, requiredTokens, address);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('TokenGateTooltip re-render:', {
+      version,
+      tokenAddress,
+      requiredTokens,
+      roomState: room
+    });
+  }, [version, tokenAddress, requiredTokens, room]);
 
   useEffect(() => {
     return () => {
@@ -43,12 +61,10 @@ export function TokenGateTooltip({
     const tooltipEl = tooltipRef.current;
     const relatedTarget = e.relatedTarget as HTMLElement;
     
-    // Don't hide if moving to the tooltip content
     if (tooltipEl?.contains(relatedTarget)) {
       return;
     }
 
-    // Add a small delay before hiding
     timeoutRef.current = window.setTimeout(() => {
       setShowTooltip(false);
     }, 100);

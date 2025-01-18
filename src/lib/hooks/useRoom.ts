@@ -13,31 +13,46 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
 
   useEffect(() => {
     if (!roomName) {
+      setRoom(null);
       setIsLoading(false);
+      setError(null);
+      setNeedsOwnerInput(false);
       return;
     }
 
     let mounted = true;
+    console.log('Loading room:', roomName, 'with owner:', ownerAddress);
 
     async function loadOrCreateRoom() {
       try {
-        // First try to get the room without creating it
-        const roomData = await upsertRoom(roomName, ownerAddress, isAddress(roomName) ? roomName : null);
+        setIsLoading(true);
+        setError(null);
         
-        if (mounted) {
-          if (!roomData && !ownerAddress) {
-            setNeedsOwnerInput(true);
-            setIsLoading(false);
-            return;
-          }
+        // First try to get the room without creating it
+        const roomData = await upsertRoom(
+          roomName, 
+          ownerAddress, 
+          isAddress(roomName) ? roomName : null
+        );
+        
+        if (!mounted) return;
+
+        if (!roomData && !ownerAddress) {
+          console.log('Room needs owner input');
+          setNeedsOwnerInput(true);
+          setRoom(null);
+        } else {
+          console.log('Room loaded:', roomData);
           setRoom(roomData);
-          setError(null);
           setNeedsOwnerInput(false);
         }
+        setError(null);
       } catch (err) {
         console.error('Room error:', err);
         if (mounted) {
           setError(err instanceof Error ? err : new Error('Failed to load room'));
+          setRoom(null);
+          setNeedsOwnerInput(false);
         }
       } finally {
         if (mounted) {

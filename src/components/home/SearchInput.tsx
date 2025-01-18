@@ -13,6 +13,7 @@ export function SearchInput({ onSubmit }: SearchInputProps) {
     if (roomName.trim()) {
       // Convert to lowercase before submitting
       onSubmit(roomName.trim().toLowerCase());
+      setRoomName(''); // Clear input after submission
     }
   };
 
@@ -29,7 +30,8 @@ export function SearchInput({ onSubmit }: SearchInputProps) {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
         <button
           type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          disabled={!roomName.trim()}
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Join/Create Room
         </button>

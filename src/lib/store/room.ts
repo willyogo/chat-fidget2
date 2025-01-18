@@ -9,30 +9,65 @@ type RoomState = {
   isLoading: boolean;
   error: Error | null;
   currentChannel: string | null;
+  version: number; // Add version counter
   setRoom: (room: Room | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: Error | null) => void;
   subscribeToRoom: (roomName: string) => () => void;
+  reset: () => void;
+};
+
+const initialState = {
+  room: null,
+  isLoading: true,
+  error: null,
+  currentChannel: null,
+  version: 0,
 };
 
 export const useRoomStore = create<RoomState>((set, get) => ({
-  room: null,
-  isLoading: false, // Changed from true to false
-  error: null,
-  currentChannel: null,
+  ...initialState,
 
-  setRoom: (room) => set({ room }),
+  setRoom: (room) => {
+    console.log('Setting room in store:', room);
+    // Increment version and create new room reference
+    set(state => ({ 
+      room: room ? { ...room } : null,
+      version: state.version + 1
+    }));
+  },
+  
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
+  
+  reset: () => {
+    const { currentChannel } = get();
+    if (currentChannel) {
+      console.log('Cleaning up channel on reset:', currentChannel);
+      supabase.channel(currentChannel).unsubscribe();
+    }
+    console.log('Resetting room store to initial state');
+    set({ ...initialState, version: get().version + 1 });
+  },
 
   subscribeToRoom: (roomName) => {
+    if (!roomName) {
+      console.warn('Attempted to subscribe with empty room name');
+      return () => {};
+    }
+
+    // Clean up any existing subscription
     const { currentChannel } = get();
-    
     if (currentChannel) {
+      console.log('Unsubscribing from previous channel:', currentChannel);
       supabase.channel(currentChannel).unsubscribe();
     }
 
-    const channelName = `rooms:${roomName}`;
+    // Normalize room name for consistency
+    const normalizedRoomName = roomName.toLowerCase();
+    const channelName = `room:${normalizedRoomName}`;
+    console.log('Creating new room subscription:', channelName);
+    
     const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
@@ -40,21 +75,38 @@ export const useRoomStore = create<RoomState>((set, get) => ({
           event: '*',
           schema: 'public',
           table: 'rooms',
-          filter: `name=eq.${roomName}`,
+          filter: `name=eq.${normalizedRoomName}`,
         },
         (payload) => {
+          console.log('Room change event received:', payload.eventType, payload.new);
           if (payload.eventType === 'UPDATE') {
-            set({ room: payload.new as Room });
+            const updatedRoom = payload.new as Room;
+            console.log('Updating room in store:', updatedRoom);
+            // Force a new object reference and increment version
+            set(state => ({
+              ...state,
+              room: { ...updatedRoom },
+              version: state.version + 1
+            }));
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('Room subscription status:', status, err || '');
+        if (err) {
+          console.error('Room subscription error:', err);
+        }
+      });
 
     set({ currentChannel: channelName });
 
     return () => {
+      console.log('Cleaning up room subscription:', channelName);
       channel.unsubscribe();
-      set({ currentChannel: null });
+      set(state => ({ 
+        currentChannel: null,
+        version: state.version + 1 
+      }));
     };
   },
 }));

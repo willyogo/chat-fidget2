@@ -1,7 +1,9 @@
 import { Shield } from 'lucide-react';
 import { useTokenSymbol } from '../../lib/hooks/useTokenSymbol';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
-import { useAuth } from '../auth/useAuth';
+import { useAuth } from '../../components/auth/useAuth';
+import { useRoomStore } from '../../lib/store/room';
+import { useEffect } from 'react';
 
 type TokenGateInfoProps = {
   tokenAddress: string | null;
@@ -11,14 +13,31 @@ type TokenGateInfoProps = {
 };
 
 export function TokenGateInfo({ 
-  tokenAddress, 
-  requiredTokens, 
+  tokenAddress: initialTokenAddress, 
+  requiredTokens: initialRequiredTokens, 
   isOwner,
   onManageGate 
 }: TokenGateInfoProps) {
   const { address } = useAuth();
+  const room = useRoomStore(state => state.room);
+  const version = useRoomStore(state => state.version); // Subscribe to version changes
+
+  // Use room store values, falling back to props
+  const tokenAddress = room?.token_address ?? initialTokenAddress;
+  const requiredTokens = room?.required_tokens ?? initialRequiredTokens;
+
   const { symbol, isLoading } = useTokenSymbol(tokenAddress);
   const { hasAccess } = useTokenGate(tokenAddress, requiredTokens, address);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('TokenGateInfo re-render:', {
+      version,
+      tokenAddress,
+      requiredTokens,
+      roomState: room
+    });
+  }, [version, tokenAddress, requiredTokens, room]);
 
   if (!tokenAddress) {
     if (isOwner && onManageGate) {
