@@ -1,13 +1,13 @@
-import { useState, useContext, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Smile, Image } from 'lucide-react';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { useAuth } from '../auth/useAuth';
-import { RoomContext } from '../room/RoomProvider';
 import { useTokenGate } from '../../lib/hooks/useTokenGate';
 import { sendMessage } from '../../lib/api/messages';
 import { useMessagesStore } from '../../lib/store/messages';
 import { GifPicker } from './GifPicker';
 import { useFocusManagement } from '../../lib/hooks/useFocusManagement';
+import { useRoomStore } from '../../lib/store/room';
 import type { IGif } from '@giphy/js-types';
 
 export function MessageInput() {
@@ -15,8 +15,9 @@ export function MessageInput() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
-  const { room } = useContext(RoomContext)!;
   const { login, address, isAuthenticated } = useAuth();
+  const room = useRoomStore((state) => state.room);
+  const version = useRoomStore((state) => state.version); // Subscribe to version changes
   const { hasAccess, isLoading: checkingAccess } = useTokenGate(
     room?.token_address || null,
     room?.required_tokens || 0,
@@ -93,10 +94,10 @@ export function MessageInput() {
     return <div className="text-center p-4">Checking access...</div>;
   }
 
-  if (!hasAccess) {
+  if (!hasAccess && room?.token_address) {
     return (
       <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-lg">
-        Must hold {room?.required_tokens} of token {room?.token_address} to join chat
+        Must hold {room.required_tokens} of token {room.token_address} to join chat
       </div>
     );
   }

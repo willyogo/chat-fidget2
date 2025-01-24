@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { isAddress } from 'viem';
 import { supabase } from '../../lib/auth/supabase';
@@ -25,6 +25,17 @@ export function TokenGateModal({
   const [error, setError] = useState<string | null>(null);
   const setRoom = useRoomStore(state => state.setRoom);
 
+  // Add debug logging for authentication state
+  useEffect(() => {
+    console.log('TokenGateModal auth state:', {
+      userAddress: address,
+      roomName,
+      currentTokenAddress,
+      currentRequiredTokens,
+      sessionStatus: supabase.auth.getSession()
+    });
+  }, [address, roomName, currentTokenAddress, currentRequiredTokens]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!address) {
@@ -47,10 +58,30 @@ export function TokenGateModal({
       // Get current auth status
       const { data: { session } } = await supabase.auth.getSession();
       
-      console.log('Auth status:', {
+      console.log('Update attempt:', {
         authenticated: !!session,
-        jwt_claims: session?.user?.user_metadata
+        userAddress: normalizedAddress,
+        roomName: normalizedRoomName,
+        tokenAddress: tokenAddress || null,
+        requiredTokens: tokenAddress ? requiredTokens : 0
       });
+
+      // First verify the room exists and user owns it
+      const { data: roomCheck, error: checkError } = await supabase
+        .from('rooms')
+        .select('name')
+        .eq('name', normalizedRoomName)
+        .eq('owner_address', normalizedAddress)
+        .single();
+
+      if (checkError) {
+        console.error('Room check error:', checkError);
+        throw new Error('Failed to verify room ownership');
+      }
+
+      if (!roomCheck) {
+        throw new Error('Room not found or you do not have permission to edit it');
+      }
 
       // Attempt update
       const { data, error: updateError } = await supabase
@@ -69,7 +100,7 @@ export function TokenGateModal({
         throw updateError;
       }
 
-      console.log('Update response:', {
+      console.log('Update success:', {
         success: true,
         updated_data: data
       });
