@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { upsertRoom } from '../api/rooms';
 import { isAddress } from 'viem';
 import type { Database } from '../types/supabase';
+import type { SupportedNetwork } from '../config';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 
@@ -29,11 +30,23 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
         setError(null);
         
         // First try to get the room without creating it
-        const roomData = await upsertRoom(
-          roomName, 
-          ownerAddress, 
-          isAddress(roomName) ? roomName : null
-        );
+        let roomData = null;
+
+        // If it's a contract address, try both networks
+        if (isAddress(roomName) && !ownerAddress) {
+          // Try Polygon first
+          console.log('Attempting to detect owner on Polygon first');
+          roomData = await upsertRoom(roomName, null, roomName, 'polygon');
+          
+          // If no owner found on Polygon, try Base
+          if (!roomData) {
+            console.log('No owner found on Polygon, trying Base');
+            roomData = await upsertRoom(roomName, null, roomName, 'base');
+          }
+        } else {
+          // For non-contract rooms or when owner is provided
+          roomData = await upsertRoom(roomName, ownerAddress, null);
+        }
         
         if (!mounted) return;
 

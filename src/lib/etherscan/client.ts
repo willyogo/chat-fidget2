@@ -1,8 +1,16 @@
-import { config } from '../config';
+import { config, type SupportedNetwork } from '../config';
 
-const ETHERSCAN_API_URL = 'https://api.basescan.org/api';
+const EXPLORER_URLS = {
+  base: 'https://api.basescan.org/api',
+  polygon: 'https://api.polygonscan.com/api',
+} as const;
 
-type EtherscanResponse = {
+const API_KEYS = {
+  base: config.etherscanApiKey,
+  polygon: config.polygonscanApiKey,
+} as const;
+
+type ExplorerResponse = {
   status: string;
   message: string;
   result: Array<{
@@ -11,22 +19,25 @@ type EtherscanResponse = {
   }>;
 };
 
-export async function getContractCreator(contractAddress: string): Promise<string | null> {
+export async function getContractCreator(
+  contractAddress: string,
+  network: SupportedNetwork = 'base'
+): Promise<string | null> {
   try {
-    console.log('Fetching contract creator from Etherscan for:', contractAddress);
+    console.log(`Fetching contract creator from ${network} explorer for:`, contractAddress);
     
     const response = await fetch(
-      `${ETHERSCAN_API_URL}?module=contract&action=getcontractcreation&contractaddresses=${contractAddress}&apikey=${config.etherscanApiKey}`
+      `${EXPLORER_URLS[network]}?module=contract&action=getcontractcreation&contractaddresses=${contractAddress}&apikey=${API_KEYS[network]}`
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Etherscan API error:', errorText);
-      throw new Error(`Etherscan API request failed: ${response.status} ${response.statusText}`);
+      console.error(`${network} explorer API error:`, errorText);
+      throw new Error(`${network} explorer API request failed: ${response.status} ${response.statusText}`);
     }
 
-    const data: EtherscanResponse = await response.json();
-    console.log('Etherscan API response:', data);
+    const data: ExplorerResponse = await response.json();
+    console.log(`${network} explorer API response:`, data);
     
     if (data.status === '1' && data.result.length > 0) {
       const creatorAddress = data.result[0].contractCreator.toLowerCase();
@@ -35,14 +46,13 @@ export async function getContractCreator(contractAddress: string): Promise<strin
     }
 
     if (data.status === '0') {
-      console.warn('Etherscan API returned error:', data.message);
+      console.warn(`${network} explorer API returned error:`, data.message);
     }
 
     console.log('No contract creator found');
     return null;
   } catch (error) {
-    console.error('Error fetching contract creator from Etherscan:', error);
-    // Don't throw, return null to allow the calling code to handle the failure
+    console.error(`Error fetching contract creator from ${network} explorer:`, error);
     return null;
   }
 }

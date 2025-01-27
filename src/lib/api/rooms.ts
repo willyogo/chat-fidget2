@@ -2,6 +2,7 @@ import { supabase } from '../auth/supabase';
 import { isAddress } from 'viem';
 import { getTokenOwner } from '../contracts/owner';
 import type { Database } from '../types/supabase';
+import type { SupportedNetwork } from '../config';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 
@@ -22,7 +23,8 @@ export async function getRoom(name: string): Promise<Room | null> {
 export async function upsertRoom(
   name: string, 
   ownerAddress: string | null, 
-  tokenAddress: string | null
+  tokenAddress: string | null,
+  network: SupportedNetwork = 'base'
 ): Promise<Room | null> {
   try {
     // Normalize room name to lowercase
@@ -35,14 +37,20 @@ export async function upsertRoom(
     // If no owner address is provided and room name is a contract address
     // try to get its owner
     if (!ownerAddress && isAddress(normalizedName)) {
-      const contractOwner = await getTokenOwner(normalizedName);
+      console.log(`Attempting to detect owner for token ${normalizedName} on ${network}`);
+      const contractOwner = await getTokenOwner(normalizedName, network);
+      
       if (contractOwner) {
+        console.log(`Found owner ${contractOwner} for token ${normalizedName} on ${network}`);
         ownerAddress = contractOwner;
+      } else {
+        console.log(`No owner found for token ${normalizedName} on ${network}`);
       }
     }
 
     // If we still don't have an owner address, return null to prompt for input
     if (!ownerAddress) {
+      console.log('No owner address found, will prompt for manual input');
       return null;
     }
 
@@ -53,6 +61,7 @@ export async function upsertRoom(
         name: normalizedName,
         owner_address: ownerAddress.toLowerCase(),
         token_address: tokenAddress,
+        token_network: isAddress(normalizedName) ? network : null,
         required_tokens: 0,
         use_contract_avatar: isAddress(normalizedName)
       })
@@ -87,6 +96,7 @@ export async function getPopularRooms(limit = 11): Promise<Room[]> {
         name,
         owner_address,
         token_address,
+        token_network,
         required_tokens,
         avatar_url,
         use_contract_avatar

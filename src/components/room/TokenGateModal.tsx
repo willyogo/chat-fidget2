@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 import { isAddress } from 'viem';
 import { supabase } from '../../lib/auth/supabase';
 import { useAuth } from '../../components/auth/useAuth';
 import { useRoomStore } from '../../lib/store/room';
+import { type SupportedNetwork, SUPPORTED_NETWORKS } from '../../lib/config';
 
 type TokenGateModalProps = {
   roomName: string;
@@ -21,6 +22,7 @@ export function TokenGateModal({
   const { address } = useAuth();
   const [tokenAddress, setTokenAddress] = useState(currentTokenAddress || '');
   const [requiredTokens, setRequiredTokens] = useState(currentRequiredTokens);
+  const [network, setNetwork] = useState<SupportedNetwork>('base');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setRoom = useRoomStore(state => state.setRoom);
@@ -66,7 +68,8 @@ export function TokenGateModal({
         userAddress: normalizedAddress,
         roomName: normalizedRoomName,
         tokenAddress: tokenAddress || null,
-        requiredTokens: tokenAddress ? requiredTokens : 0
+        requiredTokens: tokenAddress ? requiredTokens : 0,
+        network
       });
 
       // First verify the room exists and user owns it
@@ -74,7 +77,7 @@ export function TokenGateModal({
         .from('rooms')
         .select('name, owner_address')
         .eq('name', normalizedRoomName)
-        .eq('owner_address', normalizedAddress)
+        .ilike('owner_address', normalizedAddress) // Use case-insensitive comparison
         .single();
 
       if (checkError) {
@@ -92,9 +95,10 @@ export function TokenGateModal({
         .update({
           token_address: tokenAddress || null,
           required_tokens: tokenAddress ? requiredTokens : 0,
+          token_network: tokenAddress ? network : null,
         })
         .eq('name', normalizedRoomName)
-        .eq('owner_address', normalizedAddress)
+        .ilike('owner_address', normalizedAddress) // Use case-insensitive comparison
         .select('*')
         .single();
 
@@ -152,22 +156,44 @@ export function TokenGateModal({
           </div>
 
           {tokenAddress && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Required Tokens
-              </label>
-              <input
-                type="number"
-                value={requiredTokens}
-                onChange={(e) => setRequiredTokens(Number(e.target.value))}
-                min="0"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Network
+                </label>
+                <select
+                  value={network}
+                  onChange={(e) => setNetwork(e.target.value as SupportedNetwork)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {Object.entries(SUPPORTED_NETWORKS).map(([key, chain]) => (
+                    <option key={key} value={key}>
+                      {chain.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Required Tokens
+                </label>
+                <input
+                  type="number"
+                  value={requiredTokens}
+                  onChange={(e) => setRequiredTokens(Number(e.target.value))}
+                  min="0"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </>
           )}
 
           {error && (
-            <p className="text-red-600 text-sm">{error}</p>
+            <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+              <AlertCircle size={16} />
+              <p>{error}</p>
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-4">

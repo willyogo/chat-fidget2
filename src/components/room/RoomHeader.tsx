@@ -46,6 +46,7 @@ export function RoomHeader({ room }: RoomHeaderProps) {
           <TokenGateTooltip
             tokenAddress={room.token_address}
             requiredTokens={room.required_tokens}
+            network={room.token_network}
             isOwner={isOwner}
             onManageGate={() => setShowTokenGateModal(true)}
           />

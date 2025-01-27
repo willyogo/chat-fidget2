@@ -17,11 +17,12 @@ export function MessageInput() {
   const [showGifPicker, setShowGifPicker] = useState(false);
   const { login, address, isAuthenticated } = useAuth();
   const room = useRoomStore((state) => state.room);
-  const version = useRoomStore((state) => state.version); // Subscribe to version changes
+  const version = useRoomStore((state) => state.version);
   const { hasAccess, isLoading: checkingAccess } = useTokenGate(
     room?.token_address || null,
     room?.required_tokens || 0,
-    address
+    address,
+    room?.token_network || 'base'
   );
   const addMessage = useMessagesStore((state) => state.addMessage);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
@@ -94,7 +95,8 @@ export function MessageInput() {
     return <div className="text-center p-4">Checking access...</div>;
   }
 
-  if (!hasAccess && room?.token_address) {
+  // Only show the token gate warning if the user is authenticated and doesn't have access
+  if (!hasAccess && room?.token_address && isAuthenticated) {
     return (
       <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-lg">
         Must hold {room.required_tokens} of token {room.token_address} to join chat
