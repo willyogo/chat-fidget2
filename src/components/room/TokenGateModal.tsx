@@ -27,14 +27,17 @@ export function TokenGateModal({
 
   // Add debug logging for authentication state
   useEffect(() => {
-    console.log('TokenGateModal auth state:', {
-      userAddress: address,
-      roomName,
-      currentTokenAddress,
-      currentRequiredTokens,
-      sessionStatus: supabase.auth.getSession()
-    });
-  }, [address, roomName, currentTokenAddress, currentRequiredTokens]);
+    async function checkAuthState() {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('TokenGateModal auth state:', {
+        userAddress: address,
+        roomName,
+        sessionStatus: session ? 'active' : 'none',
+        sessionUser: session?.user?.id
+      });
+    }
+    checkAuthState();
+  }, [address, roomName]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,14 +72,14 @@ export function TokenGateModal({
       // First verify the room exists and user owns it
       const { data: roomCheck, error: checkError } = await supabase
         .from('rooms')
-        .select('name')
+        .select('name, owner_address')
         .eq('name', normalizedRoomName)
         .eq('owner_address', normalizedAddress)
         .single();
 
       if (checkError) {
         console.error('Room check error:', checkError);
-        throw new Error('Failed to verify room ownership');
+        throw new Error(`Failed to verify room ownership: ${checkError.message}`);
       }
 
       if (!roomCheck) {
@@ -97,7 +100,7 @@ export function TokenGateModal({
 
       if (updateError) {
         console.error('Update error:', updateError);
-        throw updateError;
+        throw new Error(`Failed to update room: ${updateError.message}`);
       }
 
       console.log('Update success:', {
