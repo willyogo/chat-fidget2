@@ -10,7 +10,7 @@ export type SupportedNetwork = keyof typeof SUPPORTED_NETWORKS;
 
 export const config = {
   privyAppId: import.meta.env.VITE_PRIVY_APP_ID,
-  airstackApiKey: import.meta.env.VITE_AIRSTACK_API_KEY,
+  neynarApiKey: import.meta.env.VITE_NEYNAR_API_KEY,
   alchemyApiKey: import.meta.env.VITE_ALCHEMY_API_KEY,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -23,10 +23,13 @@ export const config = {
   },
 } as const;
 
+// Initialize Giphy client
+export const giphyClient = new GiphyFetch(config.giphyApiKey);
+
 // Validate required environment variables
 const requiredEnvVars = {
   VITE_PRIVY_APP_ID: config.privyAppId,
-  VITE_AIRSTACK_API_KEY: config.airstackApiKey,
+  VITE_NEYNAR_API_KEY: config.neynarApiKey,
   VITE_ALCHEMY_API_KEY: config.alchemyApiKey,
   VITE_SUPABASE_URL: config.supabaseUrl,
   VITE_SUPABASE_ANON_KEY: config.supabaseAnonKey,
@@ -40,6 +43,3 @@ Object.entries(requiredEnvVars).forEach(([key, value]) => {
     throw new Error(`Missing required environment variable: ${key}`);
   }
 });
-
-// Initialize Giphy client
-export const giphyClient = new GiphyFetch(config.giphyApiKey);

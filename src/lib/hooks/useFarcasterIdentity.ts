@@ -1,22 +1,10 @@
 import { useEffect, useState } from 'react';
-import { queryAirstack } from '../airstack/client';
-import { GET_FARCASTER_IDENTITY } from '../airstack/queries';
+import { supabase } from '../auth/supabase';
 
 type FarcasterIdentity = {
   username: string | null;
   avatar: string | null;
 };
-
-function findBestSocialMatch(socials: any[] | undefined) {
-  if (!socials?.length) return null;
-  
-  // Find first entry with both username and avatar
-  const complete = socials.find(s => s.profileName && s.profileImage);
-  if (complete) return complete;
-  
-  // Otherwise return first entry with either username or avatar
-  return socials.find(s => s.profileName || s.profileImage) || null;
-}
 
 export function useFarcasterIdentity(address: string | undefined) {
   const [identity, setIdentity] = useState<FarcasterIdentity>({ username: null, avatar: null });
@@ -32,18 +20,30 @@ export function useFarcasterIdentity(address: string | undefined) {
 
     async function fetchIdentity() {
       try {
-        const { data } = await queryAirstack(GET_FARCASTER_IDENTITY, { 
-          address: address.toLowerCase() 
+        const response = await fetch(`${supabase.supabaseUrl}/functions/v1/farcaster`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+          },
+          body: JSON.stringify({ address: address.toLowerCase() }),
         });
+
+        if (!response.ok) throw new Error('Failed to fetch Farcaster identity');
+        
+        const data = await response.json();
         
         if (!mounted) return;
 
-        const bestMatch = findBestSocialMatch(data?.Socials?.Social);
-        
-        setIdentity({
-          username: bestMatch?.profileName || null,
-          avatar: bestMatch?.profileImage || null,
-        });
+        if (data.result?.user) {
+          const { username, pfp_url } = data.result.user;
+          setIdentity({
+            username: username || null,
+            avatar: pfp_url || null,
+          });
+        } else {
+          setIdentity({ username: null, avatar: null });
+        }
       } catch (error) {
         console.error('Error fetching Farcaster identity:', error);
         if (mounted) {
