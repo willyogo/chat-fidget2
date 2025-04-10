@@ -1,41 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useMessagesStore } from '../store/messages';
 
-// Improved throttle with proper typing and cancelation
-function throttle<T extends (...args: any[]) => void>(
-  func: T, 
-  limit: number
-): [(...args: Parameters<T>) => void, () => void] {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  let lastRun = 0;
-
-  function cancel() {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  }
-
-  function throttled(...args: Parameters<T>) {
-    const now = Date.now();
-
-    if (lastRun && now < lastRun + limit) {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        lastRun = now;
-        func(...args);
-      }, limit);
-    } else {
-      lastRun = now;
-      func(...args);
-    }
-  }
-
-  return [throttled, cancel];
-}
-
 const SCROLL_THRESHOLD = 50;
 const LOAD_MORE_THRESHOLD = 200;
+const SCROLL_TIMEOUT = 300;
 
 export function useVirtualMessages(roomId: string, loadingImages: number) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,6 +12,8 @@ export function useVirtualMessages(roomId: string, loadingImages: number) {
   const lastScrollTop = useRef(0);
   const isScrolling = useRef(false);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const scrollAttempts = useRef(0);
+  const maxScrollAttempts = 3;
   
   const { 
     messages, 
@@ -60,30 +30,51 @@ export function useVirtualMessages(roomId: string, loadingImages: number) {
   }, []);
 
   const scrollToBottom = useCallback((smooth = false) => {
-    if (!scrollRef.current || isScrolling.current) return;
-    
-    isScrolling.current = true;
-    const container = scrollRef.current;
+    if (!scrollRef.current) return;
 
     // Clear any existing scroll timeout
     if (scrollTimeout.current) {
       clearTimeout(scrollTimeout.current);
     }
 
+    const performScroll = () => {
+      if (!scrollRef.current) return;
+      
+      const container = scrollRef.current;
+      const { scrollHeight, clientHeight } = container;
+      const targetScroll = scrollHeight - clientHeight;
+
+      container.scrollTo({
+        top: targetScroll,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+
+      // Verify scroll position after a short delay
+      scrollTimeout.current = setTimeout(() => {
+        if (!scrollRef.current) return;
+        
+        const { scrollTop, scrollHeight: newScrollHeight, clientHeight: newClientHeight } = scrollRef.current;
+        const expectedPosition = newScrollHeight - newClientHeight;
+        const scrollDiff = Math.abs(expectedPosition - scrollTop);
+
+        // If we're not at the bottom and haven't exceeded max attempts, try again
+        if (scrollDiff > SCROLL_THRESHOLD && scrollAttempts.current < maxScrollAttempts) {
+          scrollAttempts.current++;
+          performScroll();
+        } else {
+          isScrolling.current = false;
+          scrollAttempts.current = 0;
+        }
+      }, SCROLL_TIMEOUT);
+    };
+
+    isScrolling.current = true;
+    scrollAttempts.current = 0;
+    
     // Use double RAF for more reliable scrolling
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (!container) return;
-        
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: smooth ? 'smooth' : 'auto'
-        });
-        
-        // Reset scrolling flag after animation
-        scrollTimeout.current = setTimeout(() => {
-          isScrolling.current = false;
-        }, smooth ? 300 : 50);
+        performScroll();
       });
     });
   }, []);
@@ -138,6 +129,7 @@ export function useVirtualMessages(roomId: string, loadingImages: number) {
     setShouldScrollToBottom(true);
     lastScrollTop.current = 0;
     isScrolling.current = false;
+    scrollAttempts.current = 0;
     
     if (scrollTimeout.current) {
       clearTimeout(scrollTimeout.current);

@@ -8,7 +8,12 @@ import { useImageLoading } from '../../lib/hooks/useImageLoading';
 
 export function MessageList() {
   const { room } = useContext(RoomContext)!;
-  const { loadingImages, onImageLoad, onImageStart } = useImageLoading();
+  const { 
+    loadingImages, 
+    onImageLoad, 
+    onImageError, 
+    onImageStart 
+  } = useImageLoading();
   
   const {
     messages,
@@ -34,7 +39,7 @@ export function MessageList() {
     return () => unsubscribe();
   }, [room?.name]);
 
-  // Auto-scroll to bottom on initial load
+  // Auto-scroll to bottom on initial load and when all images are loaded
   useEffect(() => {
     if (!isLoading && !loadingImages) {
       requestAnimationFrame(() => {
@@ -80,6 +85,7 @@ export function MessageList() {
           key={message.id} 
           message={message}
           onImageLoad={onImageLoad}
+          onImageError={onImageError}
           onImageStart={onImageStart}
         />
       ))}

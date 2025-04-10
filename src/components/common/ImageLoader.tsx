@@ -4,8 +4,9 @@ type ImageLoaderProps = {
   src: string;
   alt: string;
   className?: string;
-  onLoad?: () => void;
-  onError?: () => void;
+  onLoad?: (src: string) => void;
+  onError?: (src: string) => void;
+  onLoadStart?: (src: string) => void;
 };
 
 export function ImageLoader({ 
@@ -13,7 +14,8 @@ export function ImageLoader({
   alt, 
   className = '', 
   onLoad, 
-  onError 
+  onError,
+  onLoadStart
 }: ImageLoaderProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -27,18 +29,20 @@ export function ImageLoader({
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
     setHasError(false);
-    onLoad?.();
-  }, [onLoad]);
+    onLoad?.(src);
+  }, [onLoad, src]);
 
   const handleError = useCallback(() => {
     setIsLoaded(true);
     setHasError(true);
-    onError?.();
-  }, [onError]);
+    onError?.(src);
+  }, [onError, src]);
 
   // Preload image
   useEffect(() => {
     const img = new Image();
+    
+    onLoadStart?.(src);
     img.src = src;
     img.onload = handleLoad;
     img.onerror = handleError;
@@ -47,7 +51,7 @@ export function ImageLoader({
       img.onload = null;
       img.onerror = null;
     };
-  }, [src, handleLoad, handleError]);
+  }, [src, handleLoad, handleError, onLoadStart]);
 
   return (
     <div className={`relative ${!isLoaded ? 'bg-gray-100 animate-pulse' : ''}`}>
