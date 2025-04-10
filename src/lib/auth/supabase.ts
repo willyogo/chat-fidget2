@@ -24,23 +24,25 @@ export async function signInWithWallet(address: string) {
   useAuthStore.getState().setLastAuthAttempt(Date.now());
 
   try {
-    // Attempt sign in with retry logic
-    const signInResult = await withRetry(async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: normalizedAddress,
-      });
-      
-      if (!error) return data;
-      if (error.message !== 'Invalid login credentials') throw error;
-      return null;
+    // First try to get the current session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.email === email) {
+      return { session };
+    }
+
+    // Try sign in first
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: normalizedAddress,
     });
 
-    if (signInResult) return signInResult;
+    if (!signInError && signInData.session) {
+      return signInData;
+    }
 
     // Only attempt signup if sign in failed due to invalid credentials
-    const signUpResult = await withRetry(async () => {
-      const { data, error } = await supabase.auth.signUp({
+    if (signInError?.message === 'Invalid login credentials') {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: normalizedAddress,
         options: {
@@ -48,23 +50,23 @@ export async function signInWithWallet(address: string) {
         }
       });
 
-      if (!error) return data;
-      
+      if (!signUpError) {
+        return signUpData;
+      }
+
       // If user exists, try signing in one final time
-      if (error.message === 'User already registered') {
-        const { data: finalSignIn } = await supabase.auth.signInWithPassword({
+      if (signUpError.message === 'User already registered') {
+        return await supabase.auth.signInWithPassword({
           email,
           password: normalizedAddress,
         });
-        return finalSignIn;
       }
-      
-      throw error;
-    });
 
-    return signUpResult;
+      throw signUpError;
+    }
+
+    throw signInError;
   } catch (error) {
-    console.error('Authentication error:', error);
     throw error;
   }
 }

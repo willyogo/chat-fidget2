@@ -38,13 +38,13 @@ export function TokenGateTooltip({
 
   // Debug logging
   useEffect(() => {
-    console.log('TokenGateTooltip re-render:', {
-      version,
-      tokenAddress,
-      requiredTokens,
-      network,
-      roomState: room
-    });
+    // console.log('TokenGateTooltip re-render:', {
+    //   version,
+    //   tokenAddress,
+    //   requiredTokens,
+    //   network,
+    //   roomState: room
+    // });
   }, [version, tokenAddress, requiredTokens, network, room]);
 
   useEffect(() => {

@@ -22,9 +22,12 @@ serve(async (req) => {
     const { address } = await req.json();
     if (!address) {
       return new Response(
-        JSON.stringify({ error: 'Address is required' }),
+        JSON.stringify({ 
+          result: { user: null },
+          error: null 
+        }),
         { 
-          status: 400, 
+          status: 200,
           headers: corsHeaders 
         }
       );
@@ -34,7 +37,16 @@ serve(async (req) => {
     const apiKey = Deno.env.get('NEYNAR_API_KEY');
     
     if (!apiKey) {
-      throw new Error('NEYNAR_API_KEY environment variable is not set');
+      return new Response(
+        JSON.stringify({ 
+          result: { user: null },
+          error: null 
+        }),
+        { 
+          status: 200,
+          headers: corsHeaders 
+        }
+      );
     }
 
     // Call Neynar V2 API
@@ -43,40 +55,40 @@ serve(async (req) => {
       {
         headers: {
           'accept': 'application/json',
-          'x-api-key': apiKey,
+          'api-key': apiKey,
         },
       }
     );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Neynar API error: ${error}`);
-    }
 
     const data = await response.json();
     const users = data[normalizedAddress] || [];
     const user = users[0];
 
-    // Transform the response to match the expected format
-    const result = {
-      result: {
-        user: user ? {
-          username: user.username,
-          pfp_url: user.pfp_url
-        } : null
-      }
-    };
-
+    // Always return 200 with a valid response shape
     return new Response(
-      JSON.stringify(result),
-      { headers: corsHeaders }
+      JSON.stringify({
+        result: {
+          user: user ? {
+            username: user.username,
+            pfp_url: user.pfp_url
+          } : null
+        },
+        error: null
+      }),
+      { 
+        status: 200,
+        headers: corsHeaders 
+      }
     );
   } catch (error) {
-    console.error('Error:', error);
+    // Return empty result with 200 status instead of error
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        result: { user: null },
+        error: null 
+      }),
       { 
-        status: 500, 
+        status: 200,
         headers: corsHeaders 
       }
     );

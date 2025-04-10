@@ -20,12 +20,12 @@ export function RoomHeader({ room }: RoomHeaderProps) {
   
   // Add debug logging for ownership check
   useEffect(() => {
-    console.log('Room ownership check:', {
-      userAddress: address,
-      roomOwnerAddress: room.owner_address,
-      isMatch: address && room.owner_address && 
-        address.toLowerCase() === room.owner_address.toLowerCase()
-    });
+    // console.log('Room ownership check:', {
+    //   userAddress: address,
+    //   roomOwnerAddress: room.owner_address,
+    //   isMatch: address && room.owner_address && 
+    //     address.toLowerCase() === room.owner_address.toLowerCase()
+    // });
   }, [address, room.owner_address]);
 
   const isOwner = address && room.owner_address && 

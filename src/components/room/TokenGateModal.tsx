@@ -31,12 +31,12 @@ export function TokenGateModal({
   useEffect(() => {
     async function checkAuthState() {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('TokenGateModal auth state:', {
-        userAddress: address,
-        roomName,
-        sessionStatus: session ? 'active' : 'none',
-        sessionUser: session?.user?.id
-      });
+      // console.log('TokenGateModal auth state:', {
+      //   userAddress: address,
+      //   roomName,
+      //   sessionStatus: session ? 'active' : 'none',
+      //   sessionUser: session?.user?.id
+      // });
     }
     checkAuthState();
   }, [address, roomName]);
@@ -63,14 +63,14 @@ export function TokenGateModal({
       // Get current auth status
       const { data: { session } } = await supabase.auth.getSession();
       
-      console.log('Update attempt:', {
-        authenticated: !!session,
-        userAddress: normalizedAddress,
-        roomName: normalizedRoomName,
-        tokenAddress: tokenAddress || null,
-        requiredTokens: tokenAddress ? requiredTokens : 0,
-        network
-      });
+      // console.log('Update attempt:', {
+      //   authenticated: !!session,
+      //   userAddress: normalizedAddress,
+      //   roomName: normalizedRoomName,
+      //   tokenAddress: tokenAddress || null,
+      //   requiredTokens: tokenAddress ? requiredTokens : 0,
+      //   network
+      // });
 
       // First verify the room exists and user owns it
       const { data: roomCheck, error: checkError } = await supabase
@@ -81,7 +81,7 @@ export function TokenGateModal({
         .single();
 
       if (checkError) {
-        console.error('Room check error:', checkError);
+        // console.error('Room check error:', checkError);
         throw new Error(`Failed to verify room ownership: ${checkError.message}`);
       }
 
@@ -103,25 +103,25 @@ export function TokenGateModal({
         .single();
 
       if (updateError) {
-        console.error('Update error:', updateError);
+        // console.error('Update error:', updateError);
         throw new Error(`Failed to update room: ${updateError.message}`);
       }
 
-      console.log('Update success:', {
-        success: true,
-        updated_data: data
-      });
+      // console.log('Update success:', {
+      //   success: true,
+      //   updated_data: data
+      // });
 
       // Immediately update the room state to ensure UI updates
       if (data) {
-        console.log('Updating room state with:', data);
+        // console.log('Updating room state with:', data);
         setRoom(data);
       }
 
       onClose();
     } catch (err) {
       const error = err as Error;
-      console.error('Update failed:', error);
+      // console.error('Update failed:', error);
       setError(error.message || 'Failed to update token gate');
     } finally {
       setIsSubmitting(false);

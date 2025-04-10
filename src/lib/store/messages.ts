@@ -18,7 +18,7 @@ type MessagesState = {
   subscribeToRoom: (roomId: string) => () => void;
 };
 
-export const useMessagesStore = create<MessagesState>((set, get) => ({
+export const useMessagesStore = create<MessagesState>()((set, get) => ({
   messages: [],
   isLoading: true,
   error: null,
@@ -65,7 +65,7 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         hasMore: olderMessages.length === 50,
       }));
     } catch (err) {
-      console.error('Error loading more messages:', err);
+      set({ error: err instanceof Error ? err : new Error('Failed to load more messages') });
     } finally {
       set({ isLoadingMore: false });
     }

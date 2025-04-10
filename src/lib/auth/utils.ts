@@ -1,4 +1,5 @@
-export const MIN_AUTH_INTERVAL = 2000; // 2 seconds between auth attempts
+export const MIN_AUTH_INTERVAL = 5000; // Increase to 5 seconds between auth attempts
+export const MAX_RETRIES = 2; // Limit max retries
 
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -6,25 +7,29 @@ export function sleep(ms: number): Promise<void> {
 
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  maxAttempts = 3,
-  baseDelay = 1000
+  maxAttempts = MAX_RETRIES,
+  baseDelay = MIN_AUTH_INTERVAL
 ): Promise<T> {
-  let attempt = 0;
+  let lastError: Error | null = null;
   
-  while (attempt < maxAttempts) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error: any) {
-      attempt++;
+      lastError = error;
       
-      if (attempt === maxAttempts || error?.status !== 429) {
+      // Don't retry on specific error conditions
+      if (error?.status === 400 || error?.message?.includes('Invalid login credentials')) {
         throw error;
       }
       
-      const delay = baseDelay * Math.pow(2, attempt - 1);
-      await sleep(delay);
+      if (attempt === maxAttempts - 1) {
+        throw error;
+      }
+      
+      await sleep(baseDelay * Math.pow(2, attempt));
     }
   }
   
-  throw new Error('Max retry attempts reached');
+  throw lastError || new Error('Max retry attempts reached');
 }

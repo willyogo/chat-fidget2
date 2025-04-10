@@ -29,8 +29,6 @@ export function useFarcasterIdentity(address: string | undefined) {
           body: JSON.stringify({ address: address.toLowerCase() }),
         });
 
-        if (!response.ok) throw new Error('Failed to fetch Farcaster identity');
-        
         const data = await response.json();
         
         if (!mounted) return;
@@ -45,7 +43,6 @@ export function useFarcasterIdentity(address: string | undefined) {
           setIdentity({ username: null, avatar: null });
         }
       } catch (error) {
-        console.error('Error fetching Farcaster identity:', error);
         if (mounted) {
           setIdentity({ username: null, avatar: null });
         }

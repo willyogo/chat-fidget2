@@ -30,7 +30,6 @@ export function useTokenSymbol(
 
     async function fetchSymbol() {
       try {
-        console.log(`Fetching token symbol on ${network} for:`, tokenAddress);
         const client = publicClients[network];
         const result = await client.readContract({
           address: tokenAddress as `0x${string}`,
@@ -39,12 +38,10 @@ export function useTokenSymbol(
         });
         
         if (mounted) {
-          console.log(`Found symbol on ${network}:`, result);
           setSymbol(result);
           setError(null);
         }
       } catch (err) {
-        console.error(`Error fetching token symbol on ${network}:`, err);
         if (mounted) {
           setError(err instanceof Error ? err : new Error('Failed to fetch token symbol'));
           setSymbol(null);

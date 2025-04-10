@@ -22,7 +22,7 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
     }
 
     let mounted = true;
-    console.log('Loading room:', roomName, 'with owner:', ownerAddress);
+    // console.log('Loading room:', roomName, 'with owner:', ownerAddress);
 
     async function loadOrCreateRoom() {
       try {
@@ -35,12 +35,12 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
         // If it's a contract address, try both networks
         if (isAddress(roomName) && !ownerAddress) {
           // Try Polygon first
-          console.log('Attempting to detect owner on Polygon first');
+          // console.log('Attempting to detect owner on Polygon first');
           roomData = await upsertRoom(roomName, null, roomName, 'polygon');
           
           // If no owner found on Polygon, try Base
           if (!roomData) {
-            console.log('No owner found on Polygon, trying Base');
+            // console.log('No owner found on Polygon, trying Base');
             roomData = await upsertRoom(roomName, null, roomName, 'base');
           }
         } else {
@@ -51,17 +51,17 @@ export function useRoom(roomName: string | null, ownerAddress: string | null) {
         if (!mounted) return;
 
         if (!roomData && !ownerAddress) {
-          console.log('Room needs owner input');
+          // console.log('Room needs owner input');
           setNeedsOwnerInput(true);
           setRoom(null);
         } else {
-          console.log('Room loaded:', roomData);
+          // console.log('Room loaded:', roomData);
           setRoom(roomData);
           setNeedsOwnerInput(false);
         }
         setError(null);
       } catch (err) {
-        console.error('Room error:', err);
+        // console.error('Room error:', err);
         if (mounted) {
           setError(err instanceof Error ? err : new Error('Failed to load room'));
           setRoom(null);

@@ -37,20 +37,15 @@ export async function upsertRoom(
     // If no owner address is provided and room name is a contract address
     // try to get its owner
     if (!ownerAddress && isAddress(normalizedName)) {
-      console.log(`Attempting to detect owner for token ${normalizedName} on ${network}`);
       const contractOwner = await getTokenOwner(normalizedName, network);
       
       if (contractOwner) {
-        console.log(`Found owner ${contractOwner} for token ${normalizedName} on ${network}`);
         ownerAddress = contractOwner;
-      } else {
-        console.log(`No owner found for token ${normalizedName} on ${network}`);
       }
     }
 
     // If we still don't have an owner address, return null to prompt for input
     if (!ownerAddress) {
-      console.log('No owner address found, will prompt for manual input');
       return null;
     }
 
@@ -80,7 +75,6 @@ export async function upsertRoom(
 
     return data;
   } catch (error) {
-    console.error('Error upserting room:', error);
     throw error;
   }
 }

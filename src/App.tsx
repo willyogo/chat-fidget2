@@ -12,7 +12,7 @@ export default function App() {
 
   // Reset room state and force re-mount of RoomProvider when URL changes
   useEffect(() => {
-    console.log('Room name changed:', roomName);
+    // console.log('Room name changed:', roomName);
     resetRoom();
   }, [roomName, resetRoom]);
 

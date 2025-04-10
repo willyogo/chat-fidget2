@@ -7,7 +7,7 @@ export function useSearchParams() {
     function handleUrlChange() {
       const newParams = new URLSearchParams(window.location.search);
       setParams(newParams);
-      console.log('URL params changed:', Object.fromEntries(newParams.entries()));
+      // console.log('URL params changed:', Object.fromEntries(newParams.entries()));
     }
 
     // Listen for both popstate and pushstate events

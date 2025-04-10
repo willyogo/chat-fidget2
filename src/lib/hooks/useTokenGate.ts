@@ -45,12 +45,6 @@ export function useTokenGate(
         setIsLoading(true);
         setError(null);
 
-        console.log(`Checking token balance on ${network} for:`, {
-          tokenAddress,
-          userAddress,
-          requiredTokens
-        });
-
         const client = publicClients[network];
         const [balance, decimals] = await Promise.all([
           client.readContract({
@@ -71,25 +65,12 @@ export function useTokenGate(
         // Format the balance to a decimal number considering token decimals
         const formattedBalance = Number(formatUnits(balance, decimals));
         
-        console.log(`Token balance on ${network}:`, {
-          rawBalance: balance.toString(),
-          decimals,
-          formattedBalance,
-          requiredTokens
-        });
-
         // Compare the formatted balance with required tokens
         const hasEnoughTokens = formattedBalance >= requiredTokens;
-        console.log(`Access check on ${network}:`, {
-          hasEnoughTokens,
-          formattedBalance,
-          requiredTokens
-        });
 
         setHasAccess(hasEnoughTokens);
         setError(null);
       } catch (err) {
-        console.error(`Error checking token balance on ${network}:`, err);
         setError(err instanceof Error ? err : new Error('Failed to check token balance'));
         setHasAccess(false);
       } finally {
