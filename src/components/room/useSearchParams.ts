@@ -7,14 +7,11 @@ export function useSearchParams() {
     function handleUrlChange() {
       const newParams = new URLSearchParams(window.location.search);
       setParams(newParams);
-      // console.log('URL params changed:', Object.fromEntries(newParams.entries()));
     }
 
-    // Listen for both popstate and pushstate events
     window.addEventListener('popstate', handleUrlChange);
     window.addEventListener('pushstate', handleUrlChange);
     
-    // Initial check
     handleUrlChange();
     
     return () => {
@@ -23,7 +20,6 @@ export function useSearchParams() {
     };
   }, []);
 
-  // Add a helper function to update URL params
   const updateParams = useCallback((key: string, value: string) => {
     const newParams = new URLSearchParams(window.location.search);
     if (value) {

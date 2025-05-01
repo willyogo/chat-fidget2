@@ -7,7 +7,6 @@ import type { SupportedNetwork } from '../config';
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 export async function getRoom(name: string): Promise<Room | null> {
-  // Normalize room name to lowercase
   const normalizedName = name.toLowerCase();
   
   const { data, error } = await supabase
@@ -27,34 +26,38 @@ export async function upsertRoom(
   network: SupportedNetwork = 'base'
 ): Promise<Room | null> {
   try {
-    // Normalize room name to lowercase
     const normalizedName = name.toLowerCase();
 
     // First try to get existing room
     const existing = await getRoom(normalizedName);
     if (existing) return existing;
 
+    // Validate owner address if provided
+    if (ownerAddress && !isAddress(ownerAddress)) {
+      throw new Error('Invalid owner address format');
+    }
+
     // If no owner address is provided and room name is a contract address
     // try to get its owner
-    if (!ownerAddress && isAddress(normalizedName)) {
+    let finalOwnerAddress = ownerAddress;
+    if (!finalOwnerAddress && isAddress(normalizedName)) {
       const contractOwner = await getTokenOwner(normalizedName, network);
-      
       if (contractOwner) {
-        ownerAddress = contractOwner;
+        finalOwnerAddress = contractOwner;
       }
     }
 
     // If we still don't have an owner address, return null to prompt for input
-    if (!ownerAddress) {
+    if (!finalOwnerAddress) {
       return null;
     }
 
-    // Create new room with normalized name
+    // Create new room with normalized name and owner address
     const { data, error } = await supabase
       .from('rooms')
       .insert({
         name: normalizedName,
-        owner_address: ownerAddress.toLowerCase(),
+        owner_address: finalOwnerAddress.toLowerCase(),
         token_address: tokenAddress,
         token_network: isAddress(normalizedName) ? network : null,
         required_tokens: 0,
